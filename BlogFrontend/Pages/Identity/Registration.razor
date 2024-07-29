@@ -1,0 +1,76 @@
+@page "/registration"
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@using BlogFrontend.Models
+
+@code {
+    private RegistrationDto registration = new RegistrationDto();
+    private string errorMessage;
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("/identity/registration", registration);
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo($"/confirmation?email={registration.Email}");
+            }
+            else
+            {
+                errorMessage = "Registration failed. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}
+
+<div class="container">
+    <div class="identity-wrapper">
+        <div class="left-panel">
+            <img src="Assets/IMG/LogoImg.png" alt="Logo" />
+            <div class="identity-wrap">
+                <h2>Create Account!</h2>
+                <EditForm Model="@registration" OnValidSubmit="HandleSubmit">
+                    <DataAnnotationsValidator />
+                    
+                    <div class="form-group">
+                        <label>Email</label>
+                        <InputText @bind-Value="registration.Email" placeholder="Enter your email" class="form-control" />
+                        <ValidationMessage For="@(() => registration.Email)" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Name</label>
+                        <InputText @bind-Value="registration.Name" placeholder="Enter your name" class="form-control" />
+                        <ValidationMessage For="@(() => registration.Name)" />
+                    </div>
+
+                    <button class="submit-btn" type="submit">Create Account</button>
+                </EditForm>
+                <div class="social-identity">
+                    <button class="google">Sign up with Google</button>
+                    <button class="facebook">Sign up with Facebook</button>
+                    <button class="apple">Sign up with Apple</button>
+                </div>
+                <div class="policy">
+                    <span>
+                        By signing up, you agree to our Terms of Service and acknowledge that our Privacy Policy applies to you.
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="offer registr-offer">
+                <h1>What's<br>on<br>my<br>mind<br>today?</h1>
+            </div>
+            <img class="registr-img" src="Assets/IMG/identityItem_2.png" alt="" />
+            <div class="Copyright">
+                <div>Copyright © 2023</div>
+            </div>
+        </div>
+    </div>
+</div>
