@@ -1,0 +1,108 @@
+@page "/choosetags"
+@using BlogFrontend.Models
+@using BlogFrontend.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject TopicService TopicService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<style>
+    .topic-button {
+        background-color: white;
+        border: 1px solid #ccc;
+        padding: 10px;
+        cursor: pointer;
+    }
+
+    .topic-button.selected {
+        background-color: #9BD21C;
+        color: white;
+    }
+</style>
+
+<div class="topic-page">
+    <div class="container">
+        <div class="wrapper">
+            <header class="header">
+                <img src="Assets/IMG/LogoImg.png" alt="Logo" />
+            </header>
+            <main class="main-content">
+                <h2>What are you interested in?</h2>
+                <p>Choose three or more.</p>
+                <div class="topics">
+                    @if (topics != null)
+                    {
+                        foreach (var topic in topics)
+                        {
+                            <button class="topic-button @((selectedTopics.Contains(topic.Id) ? "selected" : ""))"
+                                    @onclick="() => ToggleTopic(topic.Id)">
+                                @topic.Name
+                            </button>
+                        }
+                    }
+                    else
+                    {
+                        <p>No topics available.</p>
+                    }
+                </div>
+                <button class="next-button" @onclick="SubmitSelectedTopics">Next</button>
+            </main>
+            <div class="Copyright tegs-copyright">
+                <div>Copyright © 2023</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    @* private static List<Topic> topics = new List<Topic>
+    {
+        new Topic { Id = 1, Name = "Technology" },
+        new Topic { Id = 2, Name = "Science" },
+        new Topic { Id = 3, Name = "Sports" },
+    }; *@
+
+    private List<Topic> topics;
+    private List<int> selectedTopics = new List<int>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        topics = (await TopicService.GetTopicsAsync()).ToList();
+    }
+
+    private void ToggleTopic(int topicId)
+    {
+        if (selectedTopics.Contains(topicId))
+        {
+            selectedTopics.Remove(topicId);
+        }
+        else
+        {
+            selectedTopics.Add(topicId);
+        }
+        StateHasChanged();
+    }
+
+    private async Task SubmitSelectedTopics()
+    {
+        if (selectedTopics.Count >= 3)
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.FindFirst(c => c.Type == "sub")?.Value;
+
+            if (await TopicService.CreatePreferencesAsync(userId, selectedTopics))
+            {
+                Navigation.NavigateTo($"/blog?userId={userId}");
+            }
+            else
+            {
+                Console.Error.WriteLine("Error: Failed to create preferences.");
+            }
+        }
+        else
+        {
+            Console.Error.WriteLine("Please choose at least three topics.");
+        }
+    }
+}

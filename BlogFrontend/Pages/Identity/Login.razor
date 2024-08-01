@@ -1,32 +1,12 @@
-@page "/login"
+@page "/Identity/Login"
+@using Blazored.LocalStorage
 @using BlogFrontend.Models
-@inject NavigationManager Navigation
-@inject HttpClient Http
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorageService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
-@code {
-    private LoginDto login = new LoginDto();
-    private string errorMessage;
-
-    private async Task HandleSubmit()
-    {
-        try
-        {
-            var response = await Http.PostAsJsonAsync("/identity/login", login);
-            if (response.IsSuccessStatusCode)
-            {
-                Navigation.NavigateTo("/");
-            }
-            else
-            {
-                errorMessage = "Login failed. Please try again.";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = ex.Message;
-        }
-    }
-}
+<PageTitle>Login</PageTitle>
 
 <div class="identity-page">
     <div class="container">
@@ -46,7 +26,7 @@
 
                         <div class="form-group">
                             <label>Name</label>
-                            <InputText @bind-Value="login.Name" placeholder="Enter your name" class="form-control" />
+                            <InputText @bind-Value="login.Name" placeholder="Enter your name" type="name" class="form-control" />
                             <ValidationMessage For="@(() => login.Name)" />
                         </div>
 
@@ -63,7 +43,7 @@
                 <div class="offer">
                     <h1>Welcome to BLOG!</h1>
                     <p>“is a frequently updated web page used for personal commentary or business content.”</p>
-                    <a class="btn" href="/registration">Get Started</a>
+                    <a class="btn" href="/Identity/Registration">Get Started</a>
                 </div>
                 <img src="Assets/IMG/identityItem_1.png" alt="" />
                 <div class="Copyright">
@@ -73,3 +53,31 @@
         </div>
     </div>
 </div>
+
+@code {
+    private LoginDto login = new();
+    private string? errorMessage;
+
+    private async Task HandleSubmit()
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/Identity/Login", login);
+        
+        if (response.IsSuccessStatusCode)
+        {
+            var tokens = await response.Content.ReadFromJsonAsync<RefreshAccessTokens>();
+
+            if (tokens != null)
+            {
+                await LocalStorageService.SetItemAsStringAsync("jwt", tokens.Access);
+                await LocalStorageService.SetItemAsStringAsync("refresh", tokens.Refresh);
+
+                await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                NavigationManager.NavigateTo("/");
+            }
+        }
+        else
+        {
+            errorMessage = await response.Content.ReadAsStringAsync();
+        }
+    }
+}
