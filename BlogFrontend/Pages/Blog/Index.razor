@@ -1,0 +1,103 @@
+@page "/blogs"
+@using BlogFrontend.Models
+@using BlogFrontend.Services
+@inject TopicService TopicService
+@inject BlogService BlogService
+@inject NavigationManager Navigation
+
+<div class="blog-page">
+    <Header />
+    <div class="menu" id="menu" data-first-topic-id="@topics?.FirstOrDefault()?.Id">
+        <div class="menu-content menu-items">
+            @if (topics != null)
+            {
+                @foreach (var topic in topics)
+                {
+                    <a class="menu-item @((selectedTopicId == topic.Id ? "active" : ""))" id="topic-@topic.Id" href="javascript:void(0);" @onclick="() => SetActiveTopic(topic.Id)">
+                        @topic.Name
+                    </a>
+                }
+            }
+        </div>
+    </div>
+    <div class="blog-container">
+        <div class="blog-list" id="blog-list">
+            @if (blogs != null)
+            {
+                @foreach (var blog in blogs)
+                {
+                    <div class="blog-item">
+                        <div class="content">
+                            <div class="author">@blog.User?.Name ?? "Unknown"</div>
+                            <div class="title">@blog.Title</div>
+                            <div class="date">@blog.CreationDate.ToShortDateString()</div>
+                        </div>
+                        <img class="blog-img" src="Blog/Image/@blog.Id" alt="@blog.Title">
+                    </div>
+                }
+            }
+        </div>
+        <div class="blog-right-side">
+            <div class="recommendation-block">
+                <h2>Recommended topics</h2>
+                <div class="recommendation-block-topics">
+                    <button>Photography</button>
+                    <button>Poetry</button>
+                    <button>Space</button>
+                    <button>Money</button>
+                </div>
+            </div>
+            <div class="follow-block">
+                <h2>Who to follow</h2>
+                <div class="person">
+                    <h5>Aamatullah Rajkotwala</h5>
+                    <p>I like to write about movies, literature, pop culture and...</p>
+                    <button class="follow-button">Follow</button>
+                </div>
+                <div class="person">
+                    <h5>Marvel Gomulya</h5>
+                    <p>Indonesian Builder! Writings about philosophy, human...</p>
+                    <button class="follow-button">Follow</button>
+                </div>
+                <div class="person">
+                    <h5>Natasha MH</h5>
+                    <p>Writes on life, Travel, inspiration and Culture.</p>
+                    <button class="follow-button">Follow</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Topic> topics = new();
+    private List<Blog> blogs = new();
+    private int? selectedTopicId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var topicList = await TopicService.GetTopicsAsync();
+        if (topicList != null)
+        {
+            topics = topicList.ToList();
+            if (topics.Count > 0)
+            {
+                selectedTopicId = topics.FirstOrDefault()?.Id;
+                await LoadBlogs(selectedTopicId.Value);
+            }
+        }
+    }
+
+    private async Task SetActiveTopic(int topicId)
+    {
+        selectedTopicId = topicId;
+        await LoadBlogs(topicId);
+    }
+
+    private async Task LoadBlogs(int topicId)
+    {
+        var blogList = await BlogService.GetBlogsByTopicAsync(topicId);
+        blogs = blogList.ToList();
+    }
+
+}

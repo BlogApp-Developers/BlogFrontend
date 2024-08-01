@@ -1,0 +1,175 @@
+@page "/header"
+@using BlogFrontend.Models
+@using BlogFrontend.Providers
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Net.Http.Headers
+@inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+@inject IJSRuntime JSRuntime
+@inject JwtAuthenticationStateProvider AuthStateProvider
+
+@code {
+    public class BlogFormModel
+    {
+        public string Title { get; set; }
+        public int TopicId { get; set; }
+        public string Text { get; set; }
+        public IBrowserFile Image { get; set; }
+    }
+    private List<Topic> Topics { get; set; } = new List<Topic>();
+    private BlogFormModel BlogForm { get; set; } = new BlogFormModel();
+    private string SearchQuery { get; set; }
+    private string? userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = await AuthStateProvider.GetUserIdAsync();
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        BlogForm.Image = e.File;
+    }
+
+    private async Task LoadTopics()
+    {
+        Topics = await HttpClient.GetFromJsonAsync<List<Topic>>("/api/Topics");
+    }
+
+    private async Task SearchBlogs()
+    {
+        var response = await HttpClient.GetAsync($"/api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(SearchQuery)}");
+        var data = await response.Content.ReadFromJsonAsync<List<Blog>>();
+
+        if (data != null)
+        {
+            return;
+        }
+    }
+
+    private async Task CreateBlog()
+    {
+        if (BlogForm.Image == null)
+        {
+            return;
+        }
+
+        var formData = new MultipartFormDataContent();
+        var fileContent = new StreamContent(BlogForm.Image.OpenReadStream())
+        {
+            Headers =
+            {
+                ContentDisposition = new ContentDispositionHeaderValue("form-data")
+                {
+                    Name = "image",
+                    FileName = BlogForm.Image.Name
+                }
+            }
+        };
+        formData.Add(fileContent);
+
+        formData.Add(new StringContent(BlogForm.Title), "Title");
+        formData.Add(new StringContent(BlogForm.TopicId.ToString()), "TopicId");
+        formData.Add(new StringContent(BlogForm.Text), "Text");
+
+        var response = await HttpClient.PostAsync("/api/Blog/CreateBlog", formData);
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    private void ShowAddBlogModal()
+    {
+        JSRuntime.InvokeVoidAsync("showModal", "addBlogModal");
+    }
+
+    private void CloseAddBlogModal()
+    {
+        JSRuntime.InvokeVoidAsync("closeModal", "addBlogModal");
+    }
+
+    private async Task HandleSearchSubmit()
+    {
+        await SearchBlogs();
+    }
+
+    private async Task HandleCreateBlogSubmit()
+    {
+        await CreateBlog();
+    }
+}
+
+<div class="header">
+    <div class="header-block left-side">
+        <div class="logo">
+            <a href="/Blog/Index?userId=@userId"><img src="Assets/IMG/LogoImg.png" alt="Logo" /></a>
+        </div>
+        <div class="search-container">
+            <form id="searchForm" class="search-bar" method="get" action="javascript:void(0);" @onsubmit="HandleSearchSubmit">
+                <input type="text" @bind="SearchQuery" placeholder="Search">
+                <button type="submit">
+                    <img src="Assets/IMG/search-icon.png" alt="Search">
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="header-block right-side">
+        <div id="addBlogButton" class="add-blog add-blog-button" @onclick="ShowAddBlogModal">
+            <a href="#">
+                <img src="Assets/IMG/Plus.png" alt="Plus">
+                Add blog
+            </a>
+        </div>
+        <div id="addBlogModal" class="modal">
+            <div class="modal-content">
+                <span class="close" @onclick="CloseAddBlogModal">&times;</span>
+                <h2>Add Blog</h2>
+                <EditForm Model="BlogForm" OnValidSubmit="HandleCreateBlogSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="blog-picture">
+                        <label class="blog-picture-title" for="pictureUrl">Add picture:</label>
+                        <InputFile OnChange="HandleFileSelected" />
+                    </div>
+                    <div class="blog-title">
+                        <label for="title">Title:</label>
+                        <InputText @bind-Value="BlogForm.Title" class="input-title" />
+                    </div>
+                    <div class="blog-topic">
+                        <label for="topicId">Topic:</label>
+                        <select @bind="BlogForm.TopicId" class="topicId">
+                            @foreach (var topic in Topics)
+                            {
+                                <option value="@topic.Id">@topic.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="blog-text">
+                        <label for="text">Text:</label>
+                        <InputTextArea @bind-Value="BlogForm.Text" />
+                    </div>
+                    <button type="submit">Add Blog</button>
+                </EditForm>
+            </div>
+        </div>
+        <div class="icons">
+            <a href="#">
+                <img src="Assets/IMG/ChatCircleDots.png" alt="">
+            </a>
+            <a href="#">
+                <img src="Assets/IMG/Export.png" alt="">
+            </a>
+        </div>
+        <div class="profile">
+            <a href="#">
+                <img src="Assets/IMG/profile_image.png" alt="profile">
+            </a>
+        </div>
+    </div>
+</div>

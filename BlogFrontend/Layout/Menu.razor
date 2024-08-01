@@ -1,0 +1,91 @@
+@page "/blog"
+@using BlogFrontend.Models
+@inject HttpClient HttpClient
+
+<div class="menu" id="menu" data-first-topic-id="@firstTopicId">
+    <div class="menu-content menu-items dragscroll">
+        @if (topics != null && topics.Any())
+        {
+            @foreach (var topic in topics)
+            {
+                <a class="menu-item @((selectedTopicId == topic.Id) ? "active" : "")"
+                   id="topic-@topic.Id"
+                   href="javascript:void(0);"
+                   @onclick="() => SetActiveTopic(topic.Id)">
+                    @topic.Name
+                </a>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private List<Topic> topics;
+    private int? selectedTopicId;
+    private int? firstTopicId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTopics();
+        if (topics != null && topics.Count > 0)
+        {
+            firstTopicId = topics.First().Id;
+            selectedTopicId = firstTopicId;
+            await LoadBlogs(firstTopicId.Value);
+        }
+    }
+
+    private async Task LoadTopics()
+    {
+        try
+        {
+            topics = await HttpClient.GetFromJsonAsync<List<Topic>>("/api/Topics");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading topics: {ex.Message}");
+        }
+    }
+
+    private async Task SetActiveTopic(int topicId)
+    {
+        selectedTopicId = topicId;
+        await LoadBlogs(topicId);
+    }
+
+    private async Task LoadBlogs(int topicId)
+    {
+        try
+        {
+            var response = await HttpClient.GetAsync($"/api/GetBlogsByTopic?topicId={topicId}");
+            var blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();
+
+            if (blogs != null)
+            {
+                var blogList = blogs.Select(blog => new BlogItem
+                {
+                    Id = blog.Id,
+                    Title = blog.Title,
+                    AuthorName = blog.User?.Name ?? "Don Carleone",
+                    CreationDate = blog.CreationDate.ToShortDateString(),
+                    ImageUrl = $"/Blog/Image/{blog.Id}"
+                }).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading blogs: {ex.Message}");
+        }
+    }
+}
+
+@code {
+    public class BlogItem
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string AuthorName { get; set; }
+        public string CreationDate { get; set; }
+        public string ImageUrl { get; set; }
+    }
+}

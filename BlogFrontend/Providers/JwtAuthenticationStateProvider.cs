@@ -90,4 +90,12 @@ public class JwtAuthenticationStateProvider : AuthenticationStateProvider
 
         return authenticationState;
     }
+
+    public async Task<string?> GetUserIdAsync()
+    {
+        var authState = await GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return userId;
+    }
+
 }

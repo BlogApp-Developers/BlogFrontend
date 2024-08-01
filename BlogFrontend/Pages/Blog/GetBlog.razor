@@ -1,0 +1,97 @@
+@page "/blog/{BlogId}"
+@using Blazored.LocalStorage
+@using BlogFrontend.Models
+@inject HttpClient HttpClient
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
+@using System.Security.Claims
+
+@code {
+    [Parameter]
+    public string BlogId { get; set; }
+
+    private Blog Blog { get; set; }
+    private IEnumerable<Topic> Topics { get; set; }
+    private string UserId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        UserId = await LocalStorage.GetItemAsStringAsync("userId");
+
+        await LoadBlogDetails();
+
+        await LoadTopics();
+    }
+
+    private async Task LoadBlogDetails()
+    {
+        if (string.IsNullOrEmpty(BlogId))
+        {
+            NavigationManager.NavigateTo("/");
+            return;
+        }
+
+        Blog = await HttpClient.GetFromJsonAsync<Blog>($"/api/Blog/{BlogId}");
+    }
+
+    private async Task LoadTopics()
+    {
+        Topics = await HttpClient.GetFromJsonAsync<IEnumerable<Topic>>($"/Blog/Index/?userId={UserId}");
+    }
+
+    private async Task SearchBlogsByName(string query)
+    {
+        var response = await HttpClient.GetAsync($"/api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var blogs = await response.Content.ReadFromJsonAsync<IEnumerable<Blog>>();
+        }
+        else
+        {
+            return;
+        }
+    }
+}
+
+<div class="blog-page" style="color: #fff;">
+    <Header />
+    <Menu />
+
+    <div class="blog-container">
+        <div class="blog-details">
+            <div class="blog-header">
+                <h1 style="text-align: center; margin-bottom: 25px; margin-top: 25px;">@Blog?.Title</h1>
+            </div>
+            <div class="blog-image">
+                <img src="/Blog/Image/@Blog?.Id" alt="@Blog?.Title" width="700" height="700"/>
+            </div>
+            <div class="blog-content" style="width: 700px; text-align: center; margin-top: 25px">
+                @if (Blog != null)
+                {
+                    @((MarkupString)Blog.Text)
+                    <p style="color: #333;">by @Blog.User?.Name on @Blog.CreationDate</p>
+                }
+            </div>
+        </div>
+        <div class="blog-right-side">
+            <div class="blog-list right-side-list" id="blog-list"></div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private async Task SearchBlogs(string query)
+    {
+        var response = await HttpClient.GetAsync($"/api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var blogs = await response.Content.ReadFromJsonAsync<IEnumerable<Blog>>();
+        }
+        else
+        {
+            return;
+        }
+    }
+}
