@@ -19,7 +19,7 @@ builder.Services.AddScoped<BlogService>();
 
 builder.Services.AddHttpClient("IdentityService", httpClient =>
 {
-    httpClient.BaseAddress = new Uri("http://localhost:5066/");
+    httpClient.BaseAddress = new Uri("http://localhost:5058/");
 });
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 
