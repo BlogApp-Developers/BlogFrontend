@@ -1,4 +1,4 @@
-@page "/blog/{BlogId}"
+@page "/Blog/{BlogId}"
 @using Blazored.LocalStorage
 @using BlogFrontend.Models
 @inject HttpClient HttpClient
@@ -31,17 +31,17 @@
             return;
         }
 
-        Blog = await HttpClient.GetFromJsonAsync<Blog>($"/api/Blog/{BlogId}");
+        Blog = await HttpClient.GetFromJsonAsync<Blog>($"api/Blog/{BlogId}");
     }
 
     private async Task LoadTopics()
     {
-        Topics = await HttpClient.GetFromJsonAsync<IEnumerable<Topic>>($"/Blog/Index/?userId={UserId}");
+        Topics = await HttpClient.GetFromJsonAsync<IEnumerable<Topic>>($"api/Blog/GetBlogsByTopic?userId={UserId}");
     }
 
     private async Task SearchBlogsByName(string query)
     {
-        var response = await HttpClient.GetAsync($"/api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
+        var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
 
         if (response.IsSuccessStatusCode)
         {
@@ -64,7 +64,7 @@
                 <h1 style="text-align: center; margin-bottom: 25px; margin-top: 25px;">@Blog?.Title</h1>
             </div>
             <div class="blog-image">
-                <img src="/Blog/Image/@Blog?.Id" alt="@Blog?.Title" width="700" height="700"/>
+                <img src="api/Blog/Image/@Blog?.Id" alt="@Blog?.Title" width="700" height="700"/>
             </div>
             <div class="blog-content" style="width: 700px; text-align: center; margin-top: 25px">
                 @if (Blog != null)
@@ -83,7 +83,7 @@
 @code {
     private async Task SearchBlogs(string query)
     {
-        var response = await HttpClient.GetAsync($"/api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
+        var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
 
         if (response.IsSuccessStatusCode)
         {

@@ -11,7 +11,7 @@
     {
         try
         {
-            var response = await Http.PostAsJsonAsync("/identity/registration", registration);
+            var response = await Http.PostAsJsonAsync("/api/Identity/Registration", registration);
             if (response.IsSuccessStatusCode)
             {
                 Navigation.NavigateTo($"/Identity/confirmation?email={registration.Email}");
