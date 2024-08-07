@@ -82,15 +82,30 @@
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
-            var userId = user.FindFirst(c => c.Type == "sub")?.Value;
 
-            if (await TopicService.CreatePreferencesAsync(userId, selectedTopics))
+            Console.WriteLine($"User claims: {string.Join(", ", user.Claims.Select(c => $"{c.Type}: {c.Value}"))}");
+            var userIdString = user.FindFirst(c => c.Type == "NameIdentifier")?.Value;
+
+            if (string.IsNullOrEmpty(userIdString))
             {
-                Navigation.NavigateTo($"/Blog?userId={userId}");
+                Console.Error.WriteLine("Error: User ID is null or empty.");
+                return;
+            }
+
+            if (Guid.TryParse(userIdString, out Guid userId))
+            {
+                if (await TopicService.CreatePreferencesAsync(userId, selectedTopics))
+                {
+                    Navigation.NavigateTo($"/Blog?userId={userId}");
+                }
+                else
+                {
+                    Console.Error.WriteLine("Error: Failed to create preferences.");
+                }
             }
             else
             {
-                Console.Error.WriteLine("Error: Failed to create preferences.");
+                Console.Error.WriteLine("Error: Invalid User ID format.");
             }
         }
         else
@@ -98,4 +113,5 @@
             Console.Error.WriteLine("Please choose at least three topics.");
         }
     }
+
 }

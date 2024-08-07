@@ -18,12 +18,13 @@ public class TopicService
 
         public async Task<IEnumerable<Topic>> GetTopicsAsync()
         {
-            return await _httpClient.GetFromJsonAsync<IEnumerable<Topic>>("api/topics");
+            return await _httpClient.GetFromJsonAsync<IEnumerable<Topic>>("http://localhost:5149/api/Topic/GetAllTopics");
         }
 
-        public async Task<bool> CreatePreferencesAsync(string userId, List<int> selectedTopics)
+        public async Task<bool> CreatePreferencesAsync(Guid userId, List<int> selectedTopics)
         {
-            var response = await _httpClient.PostAsJsonAsync($"api/topics/CreatePreferences/{userId}", selectedTopics);
+            Console.WriteLine(userId);
+            var response = await _httpClient.PostAsJsonAsync($"http://localhost:5149/api/Topic/AssignTopicsToUser/{userId}", selectedTopics);
             return response.IsSuccessStatusCode;
         }
     }

@@ -11,10 +11,12 @@ public class UserTopic
 {
     [Key]
     public int Id { get; set; }
-    [ForeignKey("TopicId"), Required]
+
+    [ForeignKey("Topic")]
     public int TopicId { get; set; }
-    public Topic? Topic { get; set; }
-    [ForeignKey("UserId"), Required]
-    public int UserId { get; set; }
-    public User? User { get; set; }
+    public Topic Topic { get; set; }
+
+    [ForeignKey("User")]
+    public Guid UserId { get; set; }
+    public User User { get; set; }
 }

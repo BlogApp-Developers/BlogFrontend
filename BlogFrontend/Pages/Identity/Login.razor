@@ -60,24 +60,46 @@
 
     private async Task HandleSubmit()
     {
-        var response = await HttpClient.PostAsJsonAsync("api/Identity/Login", login);
-        
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var tokens = await response.Content.ReadFromJsonAsync<RefreshAccessTokens>();
+            var response = await HttpClient.PostAsJsonAsync("api/Identity/Login", login);
 
-            if (tokens != null)
+            if (response.IsSuccessStatusCode)
             {
-                await LocalStorageService.SetItemAsStringAsync("jwt", tokens.Access);
-                await LocalStorageService.SetItemAsStringAsync("refresh", tokens.Refresh);
+                var content = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Response Content: {content}");
 
-                await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                NavigationManager.NavigateTo($"/Identity/confirmation?email={login.Email}");
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    Console.WriteLine("Error: Response content is empty");
+                    return;
+                }
+
+                var tokens = await response.Content.ReadFromJsonAsync<RefreshAccessTokens>();
+
+                if (tokens != null)
+                {
+                    await LocalStorageService.SetItemAsStringAsync("jwt", tokens.Access);
+                    await LocalStorageService.SetItemAsStringAsync("refresh", tokens.Refresh);
+
+                    await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                    NavigationManager.NavigateTo($"/Identity/confirmation?email={login.Email}");
+                }
+                else
+                {
+                    Console.WriteLine("Error: Deserialization resulted in null");
+                }
+            }
+            else
+            {
+                errorMessage = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error: {errorMessage}");
             }
         }
-        else
+        catch (Exception ex)
         {
-            errorMessage = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Exception: {ex.Message}");
+            errorMessage = "An error occurred while processing your request.";
         }
     }
 }
