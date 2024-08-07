@@ -1,4 +1,4 @@
-@page "/Identity/Login"
+@page "/"
 @using Blazored.LocalStorage
 @using BlogFrontend.Models
 @inject HttpClient HttpClient
@@ -72,7 +72,7 @@
                 await LocalStorageService.SetItemAsStringAsync("refresh", tokens.Refresh);
 
                 await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                NavigationManager.NavigateTo("/");
+                NavigationManager.NavigateTo($"/Identity/confirmation?email={login.Email}");
             }
         }
         else
