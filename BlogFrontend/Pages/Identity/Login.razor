@@ -66,29 +66,7 @@
 
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Response Content: {content}");
-
-                if (string.IsNullOrWhiteSpace(content))
-                {
-                    Console.WriteLine("Error: Response content is empty");
-                    return;
-                }
-
-                var tokens = await response.Content.ReadFromJsonAsync<RefreshAccessTokens>();
-
-                if (tokens != null)
-                {
-                    await LocalStorageService.SetItemAsStringAsync("jwt", tokens.Access);
-                    await LocalStorageService.SetItemAsStringAsync("refresh", tokens.Refresh);
-
-                    await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                    NavigationManager.NavigateTo($"/Identity/confirmation?email={login.Email}");
-                }
-                else
-                {
-                    Console.WriteLine("Error: Deserialization resulted in null");
-                }
+                NavigationManager.NavigateTo($"/Identity/confirmation?email={login.Email}");
             }
             else
             {

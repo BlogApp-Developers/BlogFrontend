@@ -1,0 +1,29 @@
+@page "/HandleLoginTokens"
+@inject ILocalStorageService LocalStorageService
+@inject NavigationManager NavigationManager
+
+<h3>Handling Tokens</h3>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = NavigationManager.Uri;
+        var uriBuilder = new UriBuilder(uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
+
+        var accessToken = query["access"];
+        var refreshToken = query["refresh"];
+
+        if (!string.IsNullOrEmpty(accessToken) && !string.IsNullOrEmpty(refreshToken))
+        {
+            await LocalStorageService.SetItemAsync("jwt", accessToken);
+            await LocalStorageService.SetItemAsync("refresh", refreshToken);
+
+            NavigationManager.NavigateTo("/Blogs");
+        }
+        else
+        {
+            Console.WriteLine("Error: Missing access or refresh tokens");
+        }
+    }
+}
