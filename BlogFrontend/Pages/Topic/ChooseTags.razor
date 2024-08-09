@@ -2,6 +2,7 @@
 @using BlogFrontend.Models
 @using BlogFrontend.Services
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.WebUtilities;
 @inject TopicService TopicService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -82,21 +83,26 @@
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
-
-            Console.WriteLine($"User claims: {string.Join(", ", user.Claims.Select(c => $"{c.Type}: {c.Value}"))}");
             var userIdString = user.FindFirst(c => c.Type == "NameIdentifier")?.Value;
 
             if (string.IsNullOrEmpty(userIdString))
             {
-                Console.Error.WriteLine("Error: User ID is null or empty.");
-                return;
+                var uri = new Uri(Navigation.Uri);
+                var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+                userIdString = queryParams.TryGetValue("userId", out var extractedUserId) ? extractedUserId.FirstOrDefault() : null;
+
+                if (string.IsNullOrEmpty(userIdString))
+                {
+                    Console.Error.WriteLine("Error: User ID is null or empty.");
+                    return;
+                }
             }
 
             if (Guid.TryParse(userIdString, out Guid userId))
             {
                 if (await TopicService.CreatePreferencesAsync(userId, selectedTopics))
                 {
-                    Navigation.NavigateTo($"/Blog?userId={userId}");
+                    Navigation.NavigateTo($"/Blogs?userId={userId}");
                 }
                 else
                 {
@@ -113,5 +119,4 @@
             Console.Error.WriteLine("Please choose at least three topics.");
         }
     }
-
 }

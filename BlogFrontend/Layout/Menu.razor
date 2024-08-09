@@ -1,6 +1,9 @@
-@page "/blog"
+@page "/menu"
 @using BlogFrontend.Models
+@using System.Text.Json
+@using System.Text.RegularExpressions
 @inject HttpClient HttpClient
+@inject NavigationManager Navigation
 
 <div class="menu" id="menu" data-first-topic-id="@firstTopicId">
     <div class="menu-content menu-items dragscroll">
@@ -23,11 +26,30 @@
     private List<Topic> topics;
     private int? selectedTopicId;
     private int? firstTopicId;
+    private Guid userId;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadTopics();
-        if (topics != null && topics.Count > 0)
+        var uri = new Uri(Navigation.Uri);
+        var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (queryParams.TryGetValue("userId", out var extractedUserId))
+        {
+            if (Guid.TryParse(extractedUserId.FirstOrDefault(), out var parsedUserId))
+            {
+                userId = parsedUserId;
+                await LoadTopics();
+            }
+            else
+            {
+                Console.Error.WriteLine("Invalid User ID format.");
+            }
+        }
+        else
+        {
+            Console.Error.WriteLine("User ID is missing in the URL");
+        }
+
+        if (topics != null && topics.Any())
         {
             firstTopicId = topics.First().Id;
             selectedTopicId = firstTopicId;
@@ -36,16 +58,35 @@
     }
 
     private async Task LoadTopics()
+{
+    try
     {
-        try
+        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Topic/GetUserTopics/{userId}");
+        if (response.IsSuccessStatusCode)
         {
-            topics = await HttpClient.GetFromJsonAsync<List<Topic>>("/api/Topics");
+            var json = await response.Content.ReadAsStringAsync();
+            json = RemoveMetadataFromJson(json);
+            topics = JsonSerializer.Deserialize<List<Topic>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
         }
-        catch (Exception ex)
+        else
         {
-            Console.Error.WriteLine($"Error loading topics: {ex.Message}");
+            Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
         }
     }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Error loading topics: {ex.Message}");
+    }
+}
+
+private string RemoveMetadataFromJson(string json)
+{
+    return Regex.Replace(json, @"\{""\$id"":""\d+"",""(\$values|\$ref)"":\[\]?\}", "{}");
+}
+
 
     private async Task SetActiveTopic(int topicId)
     {
@@ -58,18 +99,13 @@
         try
         {
             var response = await HttpClient.GetAsync($"/api/GetBlogsByTopic?topicId={topicId}");
-            var blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();
-
-            if (blogs != null)
+            if (response.IsSuccessStatusCode)
             {
-                var blogList = blogs.Select(blog => new BlogItem
-                {
-                    Id = blog.Id,
-                    Title = blog.Title,
-                    AuthorName = blog.User?.Name ?? "Don Carleone",
-                    CreationDate = blog.CreationDate.ToShortDateString(),
-                    ImageUrl = $"/Blog/Image/{blog.Id}"
-                }).ToList();
+                var blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();
+            }
+            else
+            {
+                Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
             }
         }
         catch (Exception ex)
@@ -77,9 +113,7 @@
             Console.Error.WriteLine($"Error loading blogs: {ex.Message}");
         }
     }
-}
 
-@code {
     public class BlogItem
     {
         public int Id { get; set; }

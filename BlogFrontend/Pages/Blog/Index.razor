@@ -1,12 +1,15 @@
 @page "/Blogs"
 @using BlogFrontend.Models
+@using BlogFrontend.Providers
 @using BlogFrontend.Services
 @inject TopicService TopicService
 @inject BlogService BlogService
 @inject NavigationManager Navigation
+@inject JwtAuthenticationStateProvider AuthStateProvider
 
 <div class="blog-page">
     <Header />
+    <Menu />
     <div class="menu" id="menu" data-first-topic-id="@topics?.FirstOrDefault()?.Id">
         <div class="menu-content menu-items">
             @if (topics != null)

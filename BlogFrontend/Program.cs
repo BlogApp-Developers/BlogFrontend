@@ -5,6 +5,8 @@ using BlogFrontend.Services;
 using Blazored.LocalStorage;
 using BlogFrontend.Providers;
 using Microsoft.AspNetCore.Components.Authorization;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -14,10 +16,17 @@ builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStatePr
 builder.Services.AddAuthorizationCore();
 builder.Services.AddBlazoredLocalStorage();
 
+builder.Services.AddScoped<JwtAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<JwtAuthenticationStateProvider>());
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5259") });
 builder.Services.AddScoped<TopicService>();
 builder.Services.AddScoped<BlogService>();
+
+builder.Services.AddSingleton(new JsonSerializerOptions
+{
+    ReferenceHandler = ReferenceHandler.Preserve
+});
 
 builder.Services.AddHttpClient("IdentityService", httpClient =>
 {
