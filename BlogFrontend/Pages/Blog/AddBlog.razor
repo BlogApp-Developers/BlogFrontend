@@ -1,0 +1,20 @@
+@page "/AddBlog"
+@using BlogFrontend.Models
+@using BlogFrontend.Providers
+@using BlogFrontend.Services
+@inject TopicService TopicService
+@inject BlogService BlogService
+@inject NavigationManager Navigation
+@inject JwtAuthenticationStateProvider AuthStateProvider
+
+<div class="blog-page" style="color: #fff;">
+    <Header />
+    <Menu />
+
+    <div class="blog-container">
+        <EditBlock />
+        <div class="blog-right-side">
+            <div class="blog-list right-side-list" id="blog-list"></div>
+        </div>
+    </div>
+</div>

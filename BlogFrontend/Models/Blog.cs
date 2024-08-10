@@ -10,18 +10,29 @@ namespace BlogFrontend.Models;
 public class Blog
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
+
     [Required]
-    public required string Title { get; set; }
+    public string Title { get; set; }
+
     [Required]
-    public required string Text { get; set; }
-    [ForeignKey("TopicId"), Required]
-    public required int TopicId { get; set; }
-    public Topic? Topic { get; set; }
-    [ForeignKey("UserId"), Required]
-    public required int UserId { get; set; }
-    public User? User { get; set; }
-    public string? PictureUrl { get; set; } 
+    public string Text { get; set; }
+
     [Required]
-    public required DateTime CreationDate{set; get;}
+    [ForeignKey("Topic")]
+    public int TopicId { get; set; }
+    public Topic Topic { get; set; }
+
+    [Required]
+    [ForeignKey("User")]
+    public Guid UserId { get; set; }
+    public User User { get; set; }
+
+    public string PictureUrl { get; set; } 
+
+    [Required]
+    public DateTime CreationDate { get; set; }
+
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+    public ICollection<Like> Likes { get; set; } = new List<Like>();
 }

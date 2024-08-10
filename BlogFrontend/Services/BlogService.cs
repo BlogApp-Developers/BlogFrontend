@@ -18,6 +18,6 @@ public class BlogService
 
     public async Task<List<Blog>> GetBlogsByTopicAsync(int topicId)
     {
-        return await _httpClient.GetFromJsonAsync<List<Blog>>($"http://localhost:5149/api/GetBlogsByTopic?topicId={topicId}");
+        return await _httpClient.GetFromJsonAsync<List<Blog>>($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
     }
 }

@@ -1,0 +1,85 @@
+@page "/EditBlock"
+
+<div class="editor-container">
+    <div class="editor-tools">
+        <button class="tool-button">
+            <img src="Assets/IMG/add blog image.png" alt="Image" />
+        </button>
+        <button class="tool-button">
+            <img src="Assets/IMG/add blog folder.png" alt="Folder" />
+        </button>
+        <button class="tool-button">
+            <img src="Assets/IMG/add blog link.png" alt="Link" />
+        </button>
+        <button class="tool-button">
+            <img src="Assets/IMG/add blog text underline.png" alt="Underline" />
+        </button>
+        <button class="tool-button">
+            <img src="Assets/IMG/add blog pen.png" alt="Pen" />
+        </button>
+        <button class="tool-button">
+            <img src="Assets/IMG/add blog tag.png" alt="Tag" />
+        </button>
+    </div>
+    <div class="editor-header">
+        <input type="text" placeholder="Add a title..." class="editor-title" />
+    </div>
+    <div class="editor-body">
+        <textarea placeholder="Add text..." class="editor-text"></textarea>
+    </div>
+</div>
+
+<style>
+    .editor-container {
+        background-color: #000;
+        color: #ddd;
+        padding: 10px;
+    }
+
+    .editor-header {
+        margin-bottom: 10px;
+    }
+
+    .editor-title {
+        width: 100%;
+        padding: 5px;
+        margin: 15px 0 15px 0;
+        font-size: 1.2em;
+        border: none;
+        border-radius: 4px;
+        background-color: #000;
+        color: #fff;
+    }
+
+    .editor-body {
+        margin-bottom: 10px;
+    }
+
+    .editor-text {
+        width: 100%;
+        height: 150px;
+        padding: 10px;
+        font-size: 1em;
+        border: none;
+        border-radius: 4px;
+        background-color: #000;
+        color: #fff;
+    }
+
+    .editor-tools {
+        display: flex;
+        gap: 10px;
+    }
+
+    .tool-button {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        margin-right: 30px;
+    }
+
+    .tool-button img {
+        width: 35px;
+        height: 35px;
+    }
+</style>

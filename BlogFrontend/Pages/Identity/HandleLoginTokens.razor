@@ -13,13 +13,15 @@
 
         var accessToken = query["access"];
         var refreshToken = query["refresh"];
+        var userId = query["userId"];
 
         if (!string.IsNullOrEmpty(accessToken) && !string.IsNullOrEmpty(refreshToken))
         {
             await LocalStorageService.SetItemAsync("jwt", accessToken);
             await LocalStorageService.SetItemAsync("refresh", refreshToken);
+            await LocalStorageService.SetItemAsync("userId", userId);
 
-            NavigationManager.NavigateTo("/Blogs");
+            NavigationManager.NavigateTo($"/Blogs?userId={userId}");
         }
         else
         {

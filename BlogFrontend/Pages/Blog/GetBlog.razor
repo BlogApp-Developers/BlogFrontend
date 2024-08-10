@@ -1,42 +1,29 @@
-@page "/Blog/{BlogId}"
+@page "/blog/{BlogId:guid}"
 @using Blazored.LocalStorage
 @using BlogFrontend.Models
+@using BlogFrontend.Services
+@inject TopicService TopicService
+@inject BlogService BlogService
 @inject HttpClient HttpClient
 @inject ILocalStorageService LocalStorage
 @inject NavigationManager NavigationManager
-@using System.Security.Claims
 
 @code {
     [Parameter]
-    public string BlogId { get; set; }
-
+    public Guid BlogId { get; set; }
+    
     private Blog Blog { get; set; }
     private IEnumerable<Topic> Topics { get; set; }
     private string UserId { get; set; }
 
-    protected override async Task OnInitializedAsync()
-    {
-        UserId = await LocalStorage.GetItemAsStringAsync("userId");
-
-        await LoadBlogDetails();
-
-        await LoadTopics();
-    }
-
     private async Task LoadBlogDetails()
     {
-        if (string.IsNullOrEmpty(BlogId))
+        Blog = await HttpClient.GetFromJsonAsync<Blog>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
+
+        if (Blog == null)
         {
             NavigationManager.NavigateTo("/");
-            return;
         }
-
-        Blog = await HttpClient.GetFromJsonAsync<Blog>($"api/Blog/{BlogId}");
-    }
-
-    private async Task LoadTopics()
-    {
-        Topics = await HttpClient.GetFromJsonAsync<IEnumerable<Topic>>($"api/Blog/GetBlogsByTopic?userId={UserId}");
     }
 
     private async Task SearchBlogsByName(string query)
@@ -46,10 +33,6 @@
         if (response.IsSuccessStatusCode)
         {
             var blogs = await response.Content.ReadFromJsonAsync<IEnumerable<Blog>>();
-        }
-        else
-        {
-            return;
         }
     }
 }
@@ -75,23 +58,68 @@
             </div>
         </div>
         <div class="blog-right-side">
-            <div class="blog-list right-side-list" id="blog-list"></div>
+            <div class="blog-list right-side-list" id="blog-list">
+                @if (blogs != null)
+                {
+                    @foreach (var blog in blogs)
+                    {
+                        <a href="blog/@blog.Id?userId=@UserId" class="blog-link">
+                            <div class="blog-item">
+                                <div class="content">
+                                    <div class="author">@blog.User?.Name ?? "Unknown"</div>
+                                    <div class="title">@blog.Title</div>
+                                    <div class="date">@blog.CreationDate.ToShortDateString()</div>
+                                </div>
+                                <img class="blog-img" src="Blog/Image/@blog.Id" alt="@blog.Title">
+                            </div>
+                        </a>
+                    }
+                }
+            </div>
         </div>
     </div>
 </div>
 
-@code {
-    private async Task SearchBlogs(string query)
-    {
-        var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
 
-        if (response.IsSuccessStatusCode)
+@code {
+    private List<Topic> topics = new();
+    private List<Blog> blogs = new();
+    private int? selectedTopicId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        UserId = queryParameters["userId"];
+        
+        if (string.IsNullOrEmpty(UserId))
         {
-            var blogs = await response.Content.ReadFromJsonAsync<IEnumerable<Blog>>();
+            UserId = await LocalStorage.GetItemAsStringAsync("userId");
         }
-        else
+
+        await LoadBlogDetails();
+
+        var topicList = await TopicService.GetTopicsAsync();
+        if (topicList != null)
         {
-            return;
+            topics = topicList.ToList();
+            if (topics.Count > 0)
+            {
+                selectedTopicId = topics.FirstOrDefault()?.Id;
+                await LoadBlogs(selectedTopicId.Value);
+            }
         }
+    }
+
+    private async Task SetActiveTopic(int topicId)
+    {
+        selectedTopicId = topicId;
+        await LoadBlogs(topicId);
+    }
+
+    private async Task LoadBlogs(int topicId)
+    {
+        var blogList = await BlogService.GetBlogsByTopicAsync(topicId);
+        blogs = blogList.ToList();
     }
 }

@@ -58,29 +58,29 @@
     }
 
     private async Task LoadTopics()
-{
-    try
     {
-        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Topic/GetUserTopics/{userId}");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var json = await response.Content.ReadAsStringAsync();
-            json = RemoveMetadataFromJson(json);
-            topics = JsonSerializer.Deserialize<List<Topic>>(json, new JsonSerializerOptions
+            var response = await HttpClient.GetAsync($"http://localhost:5149/api/Topic/GetUserTopics/{userId}");
+            if (response.IsSuccessStatusCode)
             {
-                PropertyNameCaseInsensitive = true
-            });
+                var json = await response.Content.ReadAsStringAsync();
+                json = RemoveMetadataFromJson(json);
+                topics = JsonSerializer.Deserialize<List<Topic>>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            else
+            {
+                Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
+            Console.Error.WriteLine($"Error loading topics: {ex.Message}");
         }
     }
-    catch (Exception ex)
-    {
-        Console.Error.WriteLine($"Error loading topics: {ex.Message}");
-    }
-}
 
 private string RemoveMetadataFromJson(string json)
 {
@@ -98,7 +98,7 @@ private string RemoveMetadataFromJson(string json)
     {
         try
         {
-            var response = await HttpClient.GetAsync($"/api/GetBlogsByTopic?topicId={topicId}");
+            var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
             if (response.IsSuccessStatusCode)
             {
                 var blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();

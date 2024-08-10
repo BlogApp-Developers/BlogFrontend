@@ -10,33 +10,22 @@
 <div class="blog-page">
     <Header />
     <Menu />
-    <div class="menu" id="menu" data-first-topic-id="@topics?.FirstOrDefault()?.Id">
-        <div class="menu-content menu-items">
-            @if (topics != null)
-            {
-                @foreach (var topic in topics)
-                {
-                    <a class="menu-item @((selectedTopicId == topic.Id ? "active" : ""))" id="topic-@topic.Id" href="javascript:void(0);" @onclick="() => SetActiveTopic(topic.Id)">
-                        @topic.Name
-                    </a>
-                }
-            }
-        </div>
-    </div>
     <div class="blog-container">
         <div class="blog-list" id="blog-list">
             @if (blogs != null)
             {
                 @foreach (var blog in blogs)
                 {
-                    <div class="blog-item">
-                        <div class="content">
-                            <div class="author">@blog.User?.Name ?? "Unknown"</div>
-                            <div class="title">@blog.Title</div>
-                            <div class="date">@blog.CreationDate.ToShortDateString()</div>
+                    <a href="blog/@blog.Id?userId=@UserId" class="blog-link">
+                        <div class="blog-item">
+                            <div class="content">
+                                <div class="author">@blog.User?.Name ?? "Unknown"</div>
+                                <div class="title">@blog.Title</div>
+                                <div class="date">@blog.CreationDate.ToShortDateString()</div>
+                            </div>
+                            <img class="blog-img" src="Blog/Image/@blog.Id" alt="@blog.Title">
                         </div>
-                        <img class="blog-img" src="Blog/Image/@blog.Id" alt="@blog.Title">
-                    </div>
+                    </a>
                 }
             }
         </div>
@@ -76,9 +65,14 @@
     private List<Topic> topics = new();
     private List<Blog> blogs = new();
     private int? selectedTopicId;
+    private string UserId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        var uri = new Uri(Navigation.Uri);
+        var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        UserId = queryParameters["userId"];
+
         var topicList = await TopicService.GetTopicsAsync();
         if (topicList != null)
         {
@@ -102,5 +96,4 @@
         var blogList = await BlogService.GetBlogsByTopicAsync(topicId);
         blogs = blogList.ToList();
     }
-
 }
