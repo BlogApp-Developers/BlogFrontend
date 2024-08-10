@@ -47,7 +47,7 @@
                 <h1 style="text-align: center; margin-bottom: 25px; margin-top: 25px;">@Blog?.Title</h1>
             </div>
             <div class="blog-image">
-                <img src="api/Blog/Image/@Blog?.Id" alt="@Blog?.Title" width="700" height="700"/>
+                <img src="@Blog.PictureUrl" alt="@Blog?.Title" width="700" height="700"/>
             </div>
             <div class="blog-content" style="width: 700px; text-align: center; margin-top: 25px">
                 @if (Blog != null)
@@ -70,7 +70,7 @@
                                     <div class="title">@blog.Title</div>
                                     <div class="date">@blog.CreationDate.ToShortDateString()</div>
                                 </div>
-                                <img class="blog-img" src="Blog/Image/@blog.Id" alt="@blog.Title">
+                                <img class="blog-img" src="@blog.PictureUrl" alt="@blog.Title">
                             </div>
                         </a>
                     }
