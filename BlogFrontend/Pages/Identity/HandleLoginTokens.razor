@@ -19,7 +19,7 @@
         {
             await LocalStorageService.SetItemAsync("jwt", accessToken);
             await LocalStorageService.SetItemAsync("refresh", refreshToken);
-            await LocalStorageService.SetItemAsync("userId", userId);
+            await LocalStorageService.SetItemAsync("userId", userId.ToString());
 
             NavigationManager.NavigateTo($"/Blogs?userId={userId}");
         }

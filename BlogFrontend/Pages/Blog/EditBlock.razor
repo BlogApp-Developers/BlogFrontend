@@ -1,10 +1,143 @@
 @page "/EditBlock"
+@using System.Net.Http.Headers
+@inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+@inject IJSRuntime JSRuntime
+@using BlogFrontend.Models
+@using BlogFrontend.Providers
+@using Microsoft.AspNetCore.Components.Forms
+
+@code {
+    public class BlogFormModel
+    {
+        public string Title { get; set; }
+        public int TopicId { get; set; }
+        public string Text { get; set; }
+        public IBrowserFile Image { get; set; }
+        public string ImagePreviewUrl { get; set; }
+    }
+
+    private List<Topic> Topics { get; set; } = new List<Topic>();
+    private BlogFormModel BlogForm { get; set; } = new BlogFormModel();
+    private IBrowserFile? selectedImage;
+    private string? selectedImageDataUrl;
+    private string? userId;
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        if (e.File != null)
+        {
+            selectedImage = e.File;
+
+            var buffer = new byte[selectedImage.Size];
+            await selectedImage.OpenReadStream().ReadAsync(buffer);
+            BlogForm.ImagePreviewUrl = $"data:{selectedImage.ContentType};base64,{Convert.ToBase64String(buffer)}";
+        }
+        else
+        {
+            Console.WriteLine("No file selected");
+        }
+    }
+
+    private void SelectTopic(int topicId)
+    {
+        BlogForm.TopicId = topicId;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Извлечение значения из localStorage
+        userId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userId");
+
+        // Логирование извлеченного значения
+        Console.WriteLine($"Retrieved UserId from local storage: {userId}");
+
+        // Удаление лишних кавычек, если они присутствуют
+        userId = userId?.Trim('"');
+
+        // Проверка, является ли значение корректным GUID
+        if (!Guid.TryParse(userId, out _))
+        {
+            Console.WriteLine("Invalid UserId");
+            userId = null; // Обработка случая некорректного UserId
+        }
+        else
+        {
+            Console.WriteLine("UserId is valid");
+        }
+
+        await LoadTopics();
+    }
+
+    private async Task LoadTopics()
+    {
+        var response = await HttpClient.GetAsync("http://localhost:5149/api/Topic/GetAllTopics");
+        if (response.IsSuccessStatusCode)
+        {
+            Topics = await response.Content.ReadFromJsonAsync<List<Topic>>();
+        }
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedImage = e.File;
+
+        var buffer = new byte[selectedImage.Size];
+        await selectedImage.OpenReadStream().ReadAsync(buffer);
+        selectedImageDataUrl = $"data:{selectedImage.ContentType};base64,{Convert.ToBase64String(buffer)}";
+    }
+
+    private async Task CreateBlog()
+{
+    if (selectedImage == null || BlogForm.TopicId == 0 || string.IsNullOrEmpty(BlogForm.Title) || string.IsNullOrEmpty(BlogForm.Text))
+    {
+        Console.WriteLine("Form fields are not correctly filled.");
+        return;
+    }
+
+    var formData = new MultipartFormDataContent();
+
+    if (selectedImage != null)
+    {
+        var streamContent = new StreamContent(selectedImage.OpenReadStream(maxAllowedSize: 1024 * 1024 * 15));
+        streamContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
+        {
+            Name = "image",
+            FileName = selectedImage.Name
+        };
+        formData.Add(streamContent);
+    }
+
+    formData.Add(new StringContent(BlogForm.Title), "title");
+    formData.Add(new StringContent(BlogForm.Text), "text");
+    formData.Add(new StringContent(BlogForm.TopicId.ToString()), "topicId");
+    formData.Add(new StringContent(userId ?? string.Empty), "userId");
+
+    var response = await HttpClient.PostAsync("http://localhost:5149/api/Blog/CreateBlog", formData);
+    var responseContent = await response.Content.ReadAsStringAsync();
+    Console.WriteLine($"Response Status Code: {response.StatusCode}");
+    Console.WriteLine($"Response Content: {responseContent}");
+
+    if (response.IsSuccessStatusCode)
+    {
+        // Обработка успешного ответа
+    }
+    else
+    {
+        // Обработка ошибки
+    }
+}
+
+}
 
 <div class="editor-container">
     <div class="editor-tools">
-        <button class="tool-button">
+        <label class="tool-button">
             <img src="Assets/IMG/add blog image.png" alt="Image" />
-        </button>
+            <InputFile OnChange="OnInputFileChange" accept="image/*" style="display: none;" />
+        </label>
+
         <button class="tool-button">
             <img src="Assets/IMG/add blog folder.png" alt="Folder" />
         </button>
@@ -17,16 +150,35 @@
         <button class="tool-button">
             <img src="Assets/IMG/add blog pen.png" alt="Pen" />
         </button>
-        <button class="tool-button">
-            <img src="Assets/IMG/add blog tag.png" alt="Tag" />
-        </button>
+        <div class="dropdown">
+            <button class="tool-button">
+                <img src="Assets/IMG/add blog tag.png" alt="Tag" />
+            </button>
+            <div class="dropdown-content">
+                <span class="topic-title">Choose a Topic</span>
+                <div class="topics">
+                    @foreach (var topic in Topics)
+                    {
+                        <button class="topic-button @(BlogForm.TopicId == topic.Id ? "selected" : "")"
+                                    @onclick="() => SelectTopic(topic.Id)" >@topic.Name</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="editor-img">
+        @if (!string.IsNullOrEmpty(BlogForm.ImagePreviewUrl))
+        {
+            <img src="@BlogForm.ImagePreviewUrl" alt="Preview" class="image-preview" style="height: 50px; width: 50px;"/>
+        }
     </div>
     <div class="editor-header">
-        <input type="text" placeholder="Add a title..." class="editor-title" />
+        <input type="text" @bind="BlogForm.Title" placeholder="Add a title..." class="editor-title" />
     </div>
     <div class="editor-body">
-        <textarea placeholder="Add text..." class="editor-text"></textarea>
+        <textarea @bind="BlogForm.Text" placeholder="Add text..." class="editor-text"></textarea>
     </div>
+    <button @onclick="CreateBlog">Create Blog</button>
 </div>
 
 <style>
@@ -76,10 +228,66 @@
         border: none;
         cursor: pointer;
         margin-right: 30px;
+        padding: 10px;
     }
 
     .tool-button img {
         width: 35px;
         height: 35px;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #222;
+        width: 460px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 1;
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+
+    .topic-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        display: block;
+        color: #fff;
+    }
+
+    .topics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        width: 460px;
+    }
+
+    .topic-button {
+        background-color: white;
+        padding: 10px;
+        cursor: pointer;
+        border-radius: 20px;
+        transition: background-color 0.3s;
+    }
+
+    .topic-button.selected {
+        background-color: #9BD21C;
+    }
+
+    label {
+        transition: background-color 0.3s;
+        border-radius: 10px;
+    }
+
+    label:hover {
+        background-color: #9BD21C;
     }
 </style>
