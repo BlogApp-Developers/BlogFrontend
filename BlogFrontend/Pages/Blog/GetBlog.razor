@@ -8,38 +8,9 @@
 @inject ILocalStorageService LocalStorage
 @inject NavigationManager NavigationManager
 
-@code {
-    [Parameter]
-    public Guid BlogId { get; set; }
-    
-    private Blog Blog { get; set; }
-    private IEnumerable<Topic> Topics { get; set; }
-    private string UserId { get; set; }
-
-    private async Task LoadBlogDetails()
-    {
-        Blog = await HttpClient.GetFromJsonAsync<Blog>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
-
-        if (Blog == null)
-        {
-            NavigationManager.NavigateTo("/");
-        }
-    }
-
-    private async Task SearchBlogsByName(string query)
-    {
-        var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
-
-        if (response.IsSuccessStatusCode)
-        {
-            var blogs = await response.Content.ReadFromJsonAsync<IEnumerable<Blog>>();
-        }
-    }
-}
-
 <div class="blog-page" style="color: #fff;">
     <Header />
-    <Menu />
+    <Menu OnTopicSelected="LoadBlogs" />
 
     <div class="blog-container">
         <div class="blog-details">
@@ -82,6 +53,12 @@
 
 
 @code {
+    [Parameter]
+    public Guid BlogId { get; set; }
+    
+    private Blog Blog { get; set; }
+    private IEnumerable<Topic> Topics { get; set; }
+    private string UserId { get; set; }
     private List<Topic> topics = new();
     private List<Blog> blogs = new();
     private int? selectedTopicId;
@@ -96,18 +73,48 @@
         {
             UserId = await LocalStorage.GetItemAsStringAsync("userId");
         }
-
+    
         await LoadBlogDetails();
+        StateHasChanged();
+    }
 
-        var topicList = await TopicService.GetTopicsAsync();
-        if (topicList != null)
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadBlogDetails();
+        StateHasChanged();
+    }
+
+    private async Task LoadBlogDetails()
+    {
+        Blog = await HttpClient.GetFromJsonAsync<Blog>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
+            StateHasChanged();
+        if (Blog == null)
         {
-            topics = topicList.ToList();
-            if (topics.Count > 0)
-            {
-                selectedTopicId = topics.FirstOrDefault()?.Id;
-                await LoadBlogs(selectedTopicId.Value);
-            }
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private async Task SearchBlogsByName(string query)
+    {
+        var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var blogs = await response.Content.ReadFromJsonAsync<IEnumerable<Blog>>();
+        }
+    }
+
+    private async Task LoadBlogs(int topicId)
+    {
+        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
+        if (response.IsSuccessStatusCode)
+        {
+            blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();
+            StateHasChanged();
+        }
+        else
+        {
+            Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
         }
     }
 
@@ -115,11 +122,5 @@
     {
         selectedTopicId = topicId;
         await LoadBlogs(topicId);
-    }
-
-    private async Task LoadBlogs(int topicId)
-    {
-        var blogList = await BlogService.GetBlogsByTopicAsync(topicId);
-        blogs = blogList.ToList();
     }
 }

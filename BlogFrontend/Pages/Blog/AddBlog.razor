@@ -2,19 +2,112 @@
 @using BlogFrontend.Models
 @using BlogFrontend.Providers
 @using BlogFrontend.Services
+@using Blazored.LocalStorage
 @inject TopicService TopicService
 @inject BlogService BlogService
-@inject NavigationManager Navigation
+@inject HttpClient HttpClient
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
 @inject JwtAuthenticationStateProvider AuthStateProvider
 
 <div class="blog-page" style="color: #fff;">
     <Header />
-    <Menu />
+    <Menu OnTopicSelected="LoadBlogs" />
 
     <div class="blog-container">
         <EditBlock />
         <div class="blog-right-side">
-            <div class="blog-list right-side-list" id="blog-list"></div>
+            <div class="blog-list right-side-list" id="blog-list">
+                @if (blogs != null)
+                {
+                    @foreach (var blog in blogs)
+                    {
+                        <a href="blog/@blog.Id?userId=@UserId" class="blog-link">
+                            <div class="blog-item">
+                                <div class="content">
+                                    <div class="author">@blog.User?.Name ?? "Unknown"</div>
+                                    <div class="title">@blog.Title</div>
+                                    <div class="date">@blog.CreationDate.ToShortDateString()</div>
+                                </div>
+                                <img class="blog-img" src="@blog.PictureUrl" alt="@blog.Title">
+                            </div>
+                        </a>
+                    }
+                }
+            </div>
         </div>
     </div>
 </div>
+
+@code {
+    [Parameter]
+    public Guid BlogId { get; set; }
+    
+    private Blog Blog { get; set; }
+    private IEnumerable<Topic> Topics { get; set; }
+    private string UserId { get; set; }
+    private List<Topic> topics = new();
+    private List<Blog> blogs = new();
+    private int? selectedTopicId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        UserId = queryParameters["userId"];
+        
+        if (string.IsNullOrEmpty(UserId))
+        {
+            UserId = await LocalStorage.GetItemAsStringAsync("userId");
+        }
+    
+        await LoadBlogDetails();
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadBlogDetails();
+        StateHasChanged();
+    }
+
+    private async Task LoadBlogDetails()
+    {
+        Blog = await HttpClient.GetFromJsonAsync<Blog>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
+            StateHasChanged();
+        if (Blog == null)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private async Task SearchBlogsByName(string query)
+    {
+        var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var blogs = await response.Content.ReadFromJsonAsync<IEnumerable<Blog>>();
+        }
+    }
+
+    private async Task LoadBlogs(int topicId)
+    {
+        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
+        if (response.IsSuccessStatusCode)
+        {
+            blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();
+            StateHasChanged();
+        }
+        else
+        {
+            Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
+        }
+    }
+
+    private async Task SetActiveTopic(int topicId)
+    {
+        selectedTopicId = topicId;
+        await LoadBlogs(topicId);
+    }
+}

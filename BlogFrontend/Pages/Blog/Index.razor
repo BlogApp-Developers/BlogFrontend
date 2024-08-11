@@ -6,10 +6,11 @@
 @inject BlogService BlogService
 @inject NavigationManager Navigation
 @inject JwtAuthenticationStateProvider AuthStateProvider
+@inject HttpClient HttpClient
 
 <div class="blog-page">
     <Header />
-    <Menu />
+    <Menu OnTopicSelected="LoadBlogs" />
     <div class="blog-container">
         <div class="blog-list" id="blog-list">
             @if (blogs != null)
@@ -62,9 +63,7 @@
 </div>
 
 @code {
-    private List<Topic> topics = new();
     private List<Blog> blogs = new();
-    private int? selectedTopicId;
     private string UserId { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -74,26 +73,19 @@
         UserId = queryParameters["userId"];
 
         var topicList = await TopicService.GetTopicsAsync();
-        if (topicList != null)
-        {
-            topics = topicList.ToList();
-            if (topics.Count > 0)
-            {
-                selectedTopicId = topics.FirstOrDefault()?.Id;
-                await LoadBlogs(selectedTopicId.Value);
-            }
-        }
     }
-
-    private async Task SetActiveTopic(int topicId)
-    {
-        selectedTopicId = topicId;
-        await LoadBlogs(topicId);
-    }
-
     private async Task LoadBlogs(int topicId)
     {
-        var blogList = await BlogService.GetBlogsByTopicAsync(topicId);
-        blogs = blogList.ToList();
+        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
+        if (response.IsSuccessStatusCode)
+        {
+            blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();
+            StateHasChanged();
+        }
+        else
+        {
+            Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
+        }
     }
 }
+

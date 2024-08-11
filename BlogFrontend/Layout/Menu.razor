@@ -23,6 +23,9 @@
 </div>
 
 @code {
+    [Parameter]
+    public EventCallback<int> OnTopicSelected { get; set; }
+
     private List<Topic> topics;
     private int? selectedTopicId;
     private int? firstTopicId;
@@ -53,7 +56,7 @@
         {
             firstTopicId = topics.First().Id;
             selectedTopicId = firstTopicId;
-            await LoadBlogs(firstTopicId.Value);
+            await OnTopicSelected.InvokeAsync(firstTopicId.Value);
         }
     }
 
@@ -82,44 +85,14 @@
         }
     }
 
-private string RemoveMetadataFromJson(string json)
-{
-    return Regex.Replace(json, @"\{""\$id"":""\d+"",""(\$values|\$ref)"":\[\]?\}", "{}");
-}
-
-
     private async Task SetActiveTopic(int topicId)
     {
         selectedTopicId = topicId;
-        await LoadBlogs(topicId);
+        await OnTopicSelected.InvokeAsync(topicId);
     }
 
-    private async Task LoadBlogs(int topicId)
+    private string RemoveMetadataFromJson(string json)
     {
-        try
-        {
-            var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
-            if (response.IsSuccessStatusCode)
-            {
-                var blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();
-            }
-            else
-            {
-                Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error loading blogs: {ex.Message}");
-        }
-    }
-
-    public class BlogItem
-    {
-        public int Id { get; set; }
-        public string Title { get; set; }
-        public string AuthorName { get; set; }
-        public string CreationDate { get; set; }
-        public string ImageUrl { get; set; }
+        return Regex.Replace(json, @"\{""\$id"":""\d+"",""(\$values|\$ref)"":\[\]?\}", "{}");
     }
 }
