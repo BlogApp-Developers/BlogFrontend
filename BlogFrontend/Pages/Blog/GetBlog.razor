@@ -25,7 +25,7 @@
                 }
             </div>
             <div class="blog-image">
-                <img src="@Blog.PictureUrl" alt="@Blog?.Title" width="700" height="700"/>
+                <img src="http://localhost:5149/api/Blog/Image/@Blog.Id" alt="@Blog?.Title" width="700" height="700"/>
             </div>
             <div class="blog-actions">
                 <button @onclick="LikeBlog" class="like-button">
@@ -49,7 +49,7 @@
                                     <div class="title">@blog.Title</div>
                                     <div class="date">@blog.CreationDate.ToShortDateString()</div>
                                 </div>
-                                <img class="blog-img" src="@blog.PictureUrl" alt="@blog.Title">
+                                <img class="blog-img" src="http://localhost:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
                             </div>
                         </a>
                     }
