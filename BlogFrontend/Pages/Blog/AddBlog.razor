@@ -25,7 +25,7 @@
                         <a href="blog/@blog.Id?userId=@UserId" class="blog-link">
                             <div class="blog-item">
                                 <div class="content">
-                                    <div class="author">@blog.User?.Name ?? "Unknown"</div>
+                                    <div class="author">@blog.UserName</div>
                                     <div class="title">@blog.Title</div>
                                     <div class="date">@blog.CreationDate.ToShortDateString()</div>
                                 </div>
@@ -43,11 +43,11 @@
     [Parameter]
     public Guid BlogId { get; set; }
     
-    private Blog Blog { get; set; }
+    private BlogDto Blog { get; set; }
     private IEnumerable<Topic> Topics { get; set; }
     private string UserId { get; set; }
     private List<Topic> topics = new();
-    private List<Blog> blogs = new();
+    private List<BlogDto> blogs = new();
     private int? selectedTopicId;
 
     protected override async Task OnInitializedAsync()
@@ -71,7 +71,7 @@
         StateHasChanged();
     }
 
-        private void HandleSearchCompleted(List<Blog> searchResults)
+        private void HandleSearchCompleted(List<BlogDto> searchResults)
     {
         blogs = searchResults;
         StateHasChanged();
@@ -79,7 +79,7 @@
 
     private async Task LoadBlogDetails()
     {
-        Blog = await HttpClient.GetFromJsonAsync<Blog>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
+        Blog = await HttpClient.GetFromJsonAsync<BlogDto>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
             StateHasChanged();
         if (Blog == null)
         {
@@ -92,7 +92,7 @@
         var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
         if (response.IsSuccessStatusCode)
         {
-            blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();
+            blogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
             StateHasChanged();
         }
         else

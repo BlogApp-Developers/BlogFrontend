@@ -427,3 +427,19 @@
     color: white;
     cursor: pointer;
 }
+
+.blog-header h1 {
+    margin: 25px 0 15px 0;
+    font-size: 40px;
+    font-weight: 700;
+}
+
+.blog-header p {
+    color: #727276;
+}
+
+.blog-content {
+    font-size: 20px;
+    font-weight: 400;
+    margin-bottom: 15px;
+}

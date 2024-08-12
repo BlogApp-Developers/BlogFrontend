@@ -15,17 +15,25 @@
     <div class="blog-container">
         <div class="blog-details">
             <div class="blog-header">
-                <h1 style="text-align: center; margin-bottom: 25px; margin-top: 25px;">@Blog?.Title</h1>
+                <h1 class="blog-title2">@Blog?.Title</h1>
+                <p>by @Blog.UserName on @Blog.CreationDate.ToShortDateString()</p>
+            </div>
+            <div class="blog-content" style="width: 700px; margin-top: 25px">
+                @if (Blog != null)
+                {
+                    @((MarkupString)Blog.Text)
+                }
             </div>
             <div class="blog-image">
                 <img src="@Blog.PictureUrl" alt="@Blog?.Title" width="700" height="700"/>
             </div>
-            <div class="blog-content" style="width: 700px; text-align: center; margin-top: 25px">
-                @if (Blog != null)
-                {
-                    @((MarkupString)Blog.Text)
-                    <p style="color: #333;">by @Blog.User?.Name on @Blog.CreationDate</p>
-                }
+            <div class="blog-actions">
+                <button @onclick="LikeBlog" class="like-button">
+                    <img src="images/like-icon.png" alt="Like" /> 
+                </button>
+                <button @onclick="OpenComments" class="comment-button">
+                    <img src="images/comment-icon.png" alt="Comment" />
+                </button>
             </div>
         </div>
         <div class="blog-right-side">
@@ -37,7 +45,7 @@
                         <a href="blog/@blog.Id?userId=@UserId" class="blog-link">
                             <div class="blog-item">
                                 <div class="content">
-                                    <div class="author">@blog.User?.Name ?? "Unknown"</div>
+                                    <div class="author">@blog.UserName</div>
                                     <div class="title">@blog.Title</div>
                                     <div class="date">@blog.CreationDate.ToShortDateString()</div>
                                 </div>
@@ -56,11 +64,11 @@
     [Parameter]
     public Guid BlogId { get; set; }
     
-    private Blog Blog { get; set; }
+    private BlogDto Blog { get; set; }
     private IEnumerable<Topic> Topics { get; set; }
     private string UserId { get; set; }
     private List<Topic> topics = new();
-    private List<Blog> blogs = new();
+    private List<BlogDto> blogs = new();
     private int? selectedTopicId;
 
     protected override async Task OnInitializedAsync()
@@ -84,7 +92,7 @@
         StateHasChanged();
     }
 
-    private void HandleSearchCompleted(List<Blog> searchResults)
+    private void HandleSearchCompleted(List<BlogDto> searchResults)
     {
         blogs = searchResults;
         StateHasChanged();
@@ -92,7 +100,7 @@
 
     private async Task LoadBlogDetails()
     {
-        Blog = await HttpClient.GetFromJsonAsync<Blog>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
+        Blog = await HttpClient.GetFromJsonAsync<BlogDto>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
             StateHasChanged();
         if (Blog == null)
         {
@@ -115,7 +123,7 @@
         var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
         if (response.IsSuccessStatusCode)
         {
-            blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();
+            blogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
             StateHasChanged();
         }
         else
@@ -128,5 +136,30 @@
     {
         selectedTopicId = topicId;
         await LoadBlogs(topicId);
+    }
+
+    private async Task LikeBlog()
+    {
+        var like = new Like
+        {
+            BlogId = BlogId,
+            UserId = new Guid(UserId)
+        };
+
+        var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Likes", like);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("Blog liked!");
+        }
+        else
+        {
+            Console.Error.WriteLine("Error liking the blog.");
+        }
+    }
+
+    private async Task OpenComments()
+    {
+        
     }
 }

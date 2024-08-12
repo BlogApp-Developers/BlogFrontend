@@ -17,7 +17,7 @@
         public IBrowserFile Image { get; set; }
     }
     [Parameter]
-    public EventCallback<List<Blog>> OnSearchCompleted { get; set; }
+    public EventCallback<List<BlogDto>> OnSearchCompleted { get; set; }
     private List<Topic> Topics { get; set; } = new List<Topic>();
     private BlogFormModel BlogForm { get; set; } = new BlogFormModel();
     private string SearchQuery { get; set; }
@@ -38,7 +38,7 @@
     private async Task SearchBlogs()
     {
         var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/SearchBlogsByTitle/{Uri.EscapeDataString(SearchQuery)}");
-        var data = await response.Content.ReadFromJsonAsync<List<Blog>>();
+        var data = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
 
         if (data != null && OnSearchCompleted.HasDelegate)
         {

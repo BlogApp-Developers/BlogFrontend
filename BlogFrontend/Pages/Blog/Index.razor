@@ -20,7 +20,7 @@
                     <a href="blog/@blog.Id?userId=@UserId" class="blog-link">
                         <div class="blog-item">
                             <div class="content">
-                                <div class="author">@blog.User?.Name ?? "Unknown"</div>
+                                <div class="author">@blog.UserName</div>
                                 <div class="title">@blog.Title</div>
                                 <div class="date">@blog.CreationDate.ToShortDateString()</div>
                             </div>
@@ -63,7 +63,7 @@
 </div>
 
 @code {
-    private List<Blog> blogs = new();
+    private List<BlogDto> blogs = new();
     private string UserId { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -75,7 +75,7 @@
         var topicList = await TopicService.GetTopicsAsync();
     }
 
-    private void HandleSearchCompleted(List<Blog> searchResults)
+    private void HandleSearchCompleted(List<BlogDto> searchResults)
     {
         blogs = searchResults;
         StateHasChanged();
@@ -86,7 +86,7 @@
         var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
         if (response.IsSuccessStatusCode)
         {
-            blogs = await response.Content.ReadFromJsonAsync<List<Blog>>();
+            blogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
             StateHasChanged();
         }
         else
