@@ -9,7 +9,7 @@
 @inject HttpClient HttpClient
 
 <div class="blog-page">
-    <Header />
+    <Header OnSearchCompleted="HandleSearchCompleted" />
     <Menu OnTopicSelected="LoadBlogs" />
     <div class="blog-container">
         <div class="blog-list" id="blog-list">
@@ -74,6 +74,13 @@
 
         var topicList = await TopicService.GetTopicsAsync();
     }
+
+    private void HandleSearchCompleted(List<Blog> searchResults)
+    {
+        blogs = searchResults;
+        StateHasChanged();
+    }
+
     private async Task LoadBlogs(int topicId)
     {
         var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
@@ -87,5 +94,6 @@
             Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
         }
     }
+
 }
 

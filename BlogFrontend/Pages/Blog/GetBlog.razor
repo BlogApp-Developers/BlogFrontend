@@ -9,7 +9,7 @@
 @inject NavigationManager NavigationManager
 
 <div class="blog-page" style="color: #fff;">
-    <Header />
+    <Header OnSearchCompleted="HandleSearchCompleted" />
     <Menu OnTopicSelected="LoadBlogs" />
 
     <div class="blog-container">
@@ -84,6 +84,12 @@
         StateHasChanged();
     }
 
+    private void HandleSearchCompleted(List<Blog> searchResults)
+    {
+        blogs = searchResults;
+        StateHasChanged();
+    }
+
     private async Task LoadBlogDetails()
     {
         Blog = await HttpClient.GetFromJsonAsync<Blog>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
@@ -94,9 +100,9 @@
         }
     }
 
-    private async Task SearchBlogsByName(string query)
+    private async Task SearchBlogsByTitle(string query)
     {
-        var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
+        var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByTitle?title={Uri.EscapeDataString(query)}");
 
         if (response.IsSuccessStatusCode)
         {

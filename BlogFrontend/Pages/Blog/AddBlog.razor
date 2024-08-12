@@ -11,7 +11,7 @@
 @inject JwtAuthenticationStateProvider AuthStateProvider
 
 <div class="blog-page" style="color: #fff;">
-    <Header />
+    <Header OnSearchCompleted="HandleSearchCompleted" />
     <Menu OnTopicSelected="LoadBlogs" />
 
     <div class="blog-container">
@@ -71,6 +71,12 @@
         StateHasChanged();
     }
 
+        private void HandleSearchCompleted(List<Blog> searchResults)
+    {
+        blogs = searchResults;
+        StateHasChanged();
+    }
+
     private async Task LoadBlogDetails()
     {
         Blog = await HttpClient.GetFromJsonAsync<Blog>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
@@ -78,16 +84,6 @@
         if (Blog == null)
         {
             NavigationManager.NavigateTo("/");
-        }
-    }
-
-    private async Task SearchBlogsByName(string query)
-    {
-        var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByName?name={Uri.EscapeDataString(query)}");
-
-        if (response.IsSuccessStatusCode)
-        {
-            var blogs = await response.Content.ReadFromJsonAsync<IEnumerable<Blog>>();
         }
     }
 
@@ -104,7 +100,6 @@
             Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
         }
     }
-
     private async Task SetActiveTopic(int topicId)
     {
         selectedTopicId = topicId;

@@ -47,24 +47,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Извлечение значения из localStorage
         userId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userId");
 
-        // Логирование извлеченного значения
-        Console.WriteLine($"Retrieved UserId from local storage: {userId}");
-
-        // Удаление лишних кавычек, если они присутствуют
         userId = userId?.Trim('"');
 
-        // Проверка, является ли значение корректным GUID
         if (!Guid.TryParse(userId, out _))
         {
-            Console.WriteLine("Invalid UserId");
-            userId = null; // Обработка случая некорректного UserId
-        }
-        else
-        {
-            Console.WriteLine("UserId is valid");
+            userId = null;
         }
 
         await LoadTopics();
@@ -116,18 +105,8 @@
 
     var response = await HttpClient.PostAsync("http://localhost:5149/api/Blog/CreateBlog", formData);
     var responseContent = await response.Content.ReadAsStringAsync();
-    Console.WriteLine($"Response Status Code: {response.StatusCode}");
-    Console.WriteLine($"Response Content: {responseContent}");
-
-    if (response.IsSuccessStatusCode)
-    {
-        // Обработка успешного ответа
-    }
-    else
-    {
-        // Обработка ошибки
-    }
-}
+    NavigationManager.NavigateTo($"/Blogs?userId={userId}");
+}   
 
 }
 
