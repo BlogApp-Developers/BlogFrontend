@@ -146,7 +146,7 @@
             UserId = new Guid(UserId)
         };
 
-        var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Likes", like);
+        var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Likes/LikeBlog", like);
 
         if (response.IsSuccessStatusCode)
         {
