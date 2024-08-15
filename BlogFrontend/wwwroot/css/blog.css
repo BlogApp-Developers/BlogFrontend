@@ -443,3 +443,18 @@
     font-weight: 400;
     margin-bottom: 15px;
 }
+
+.blog-actions {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
+
+.blog-actions button {
+    background-color: #000;
+    margin: auto;
+}
+
+.blog-actions span {
+    color: #fff;
+}

@@ -1,0 +1,91 @@
+@page "/blog/comments/{BlogId:guid}"
+@using Blazored.LocalStorage
+@using BlogFrontend.Models
+@inject HttpClient HttpClient
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
+
+<div class="comments-section">
+    <h2>Комментарии</h2>
+
+    @if (comments == null)
+    {
+        <p>Загрузка комментариев...</p>
+    }
+    else if (comments.Count == 0)
+    {
+        <p>Пока нет комментариев.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var comment in comments)
+            {
+                <li>
+                    <div class="comment">
+                        <p class="comment-content">@comment.Content</p>
+                        @* <p class="comment-details">от @comment.User.UserName, @comment.CreatedAt.ToString("g")</p> *@
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+    <div class="add-comment">
+        <textarea @bind="newCommentContent" placeholder="Напишите комментарий..."></textarea>
+        <button @onclick="SubmitComment">Добавить комментарий</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid BlogId { get; set; }
+
+    private List<CommentDto> comments;
+    private string newCommentContent;
+    private string UserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        UserId = queryParameters["userId"];
+        
+        if (string.IsNullOrEmpty(UserId))
+        {
+            UserId = await LocalStorage.GetItemAsStringAsync("userId");
+        }
+
+        await LoadComments();
+    }
+
+    private async Task LoadComments()
+    {
+        comments = await HttpClient.GetFromJsonAsync<List<CommentDto>>($"http://localhost:5149/api/Comments/blog/{BlogId}");
+    }
+
+    private async Task SubmitComment()
+    {
+        
+        
+        var comment = new Comment
+        {
+            BlogId = BlogId,
+            UserId = new Guid(UserId),
+            Content = newCommentContent,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Comments", comment);
+
+        if (response.IsSuccessStatusCode)
+        {
+            newCommentContent = string.Empty;
+            await LoadComments();
+        }
+        else
+        {
+            Console.Error.WriteLine("Ошибка при добавлении комментария.");
+        }
+    }
+
+}

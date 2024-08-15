@@ -27,14 +27,17 @@
             <div class="blog-image">
                 <img src="http://localhost:5149/api/Blog/Image/@Blog.Id" alt="@Blog?.Title" width="700" height="700"/>
             </div>
+            <hr style="color: #fff;">
             <div class="blog-actions">
                 <button @onclick="LikeBlog" class="like-button">
-                    <img src="images/like-icon.png" alt="Like" /> 
+                    <img src="@LikeIcon" alt="Like" />
+                    <span>@Blog.LikesCount Likes</span>
                 </button>
                 <button @onclick="OpenComments" class="comment-button">
-                    <img src="images/comment-icon.png" alt="Comment" />
+                    <img src="Assets/IMG/comment-icon.svg" alt="Comment" />
                 </button>
             </div>
+                <hr style="color: #fff;">
         </div>
         <div class="blog-right-side">
             <div class="blog-list right-side-list" id="blog-list">
@@ -70,6 +73,7 @@
     private List<Topic> topics = new();
     private List<BlogDto> blogs = new();
     private int? selectedTopicId;
+    private string LikeIcon { get; set; } = "Assets/IMG/like-icon-gray.svg";
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,6 +102,19 @@
         StateHasChanged();
     }
 
+    private async Task<int> GetLikeCount()
+    {
+        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Likes/GetLikesForBlog/{BlogId}");
+        
+        if (response.IsSuccessStatusCode)
+        {
+            var likeCount = await response.Content.ReadFromJsonAsync<int>();
+            return likeCount;
+        }
+        
+        return 0;
+    }
+
     private async Task LoadBlogDetails()
     {
         Blog = await HttpClient.GetFromJsonAsync<BlogDto>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
@@ -105,6 +122,12 @@
         if (Blog == null)
         {
             NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            Blog.LikesCount = await GetLikeCount();
+            var isLiked = await CheckIfLiked();
+            LikeIcon = isLiked ? "Assets/IMG/like-icon-red.svg" : "Assets/IMG/like-icon-gray.svg";
         }
     }
 
@@ -121,6 +144,7 @@
     private async Task LoadBlogs(int topicId)
     {
         var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
+        StateHasChanged();
         if (response.IsSuccessStatusCode)
         {
             blogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
@@ -131,35 +155,54 @@
             Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
         }
     }
-
     private async Task SetActiveTopic(int topicId)
     {
         selectedTopicId = topicId;
         await LoadBlogs(topicId);
     }
 
+    private async Task<bool> CheckIfLiked()
+    {
+        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Likes/IsLiked?blogId={BlogId}&userId={UserId}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var isLiked = await response.Content.ReadFromJsonAsync<bool>();
+            return isLiked;
+        }
+
+        return false;
+    }
+
     private async Task LikeBlog()
     {
-        var like = new Like
+        var likeRequest = new
         {
             BlogId = BlogId,
             UserId = new Guid(UserId)
         };
 
-        var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Likes/LikeBlog", like);
+        var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Likes/LikeBlog", likeRequest);
 
         if (response.IsSuccessStatusCode)
         {
-            Console.WriteLine("Blog liked!");
+            var likeCount = await response.Content.ReadFromJsonAsync<int>();
+            
+            Blog.LikesCount = likeCount;
+
+            LikeIcon = (LikeIcon == "Assets/IMG/like-icon-gray.svg") ? "Assets/IMG/like-icon-red.svg" : "Assets/IMG/like-icon-gray.svg";
+            
+            StateHasChanged();
         }
         else
         {
-            Console.Error.WriteLine("Error liking the blog.");
+            Console.Error.WriteLine($"Error when liking: {response.ReasonPhrase}");
         }
     }
 
+
     private async Task OpenComments()
     {
-        
+        NavigationManager.NavigateTo($"/blog/comments/{BlogId}?userId={UserId}");
     }
 }
