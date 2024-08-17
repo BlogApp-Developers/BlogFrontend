@@ -19,7 +19,7 @@
                 <a class="menu-item @((selectedTopicId == topic.Id) ? "active" : "")"
                    id="topic-@topic.Id"
                    href="javascript:void(0);"
-                   @onclick="() => SetActiveTopic(topic.Id)">
+                   @onclick="() => SetActiveTopic(topic.Id, topic.Name)">
                     @topic.Name
                 </a>
             }
@@ -29,7 +29,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<int> OnTopicSelected { get; set; }
+    public EventCallback<(int, string)> OnTopicSelected { get; set; }
 
     private List<Topic> topics;
     private int? selectedTopicId;
@@ -54,7 +54,7 @@
         {
             firstTopicId = topics.First().Id;
             selectedTopicId = firstTopicId;
-            await OnTopicSelected.InvokeAsync(firstTopicId.Value);
+            await OnTopicSelected.InvokeAsync((firstTopicId.Value, topics.First().Name));
         }
     }
 
@@ -98,10 +98,10 @@
 }
 
 
-    private async Task SetActiveTopic(int topicId)
+    private async Task SetActiveTopic(int topicId, string topicName)
     {
         selectedTopicId = topicId;
-        await OnTopicSelected.InvokeAsync(topicId);
+        await OnTopicSelected.InvokeAsync((topicId, topicName));
     }
 
     private string RemoveMetadataFromJson(string json)

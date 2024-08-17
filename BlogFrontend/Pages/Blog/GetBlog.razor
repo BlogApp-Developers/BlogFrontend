@@ -51,7 +51,7 @@
                 {
                     @foreach (var blog in blogs)
                     {
-                        <a href="blog/@blog.Id?userId=@UserId" class="blog-link">
+                        <a href="blog/@blog.Id" class="blog-link">
                             <div class="blog-item">
                                 <div class="content">
                                     <div class="author">@blog.UserName</div>
@@ -62,6 +62,10 @@
                             </div>
                         </a>
                     }
+                }
+                else
+                {
+                    <p>No blogs available for the topic: <span style="color: #9BD21C;">@selectedTopicName</span></p>
                 }
             </div>
         </div>
@@ -80,6 +84,7 @@
     private List<BlogDto> blogs = new();
     private int? selectedTopicId;
     private string LikeIcon { get; set; } = "Assets/IMG/like-icon-gray.svg";
+    private string selectedTopicName;
 
     protected override async Task OnInitializedAsync()
     {
@@ -167,12 +172,14 @@
         }
     }
 
-    private async Task LoadBlogs(int topicId)
+    private async Task LoadBlogs((int topicId, string topicName) topicInfo)
     {
+        selectedTopicName = topicInfo.topicName;
         await SetAuthorizationHeader();
 
-        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
-        StateHasChanged();
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
+
+        var response = await HttpClient.SendAsync(request);
         if (response.IsSuccessStatusCode)
         {
             blogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
@@ -180,13 +187,9 @@
         }
         else
         {
-            Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
+            blogs = null;
+            StateHasChanged();
         }
-    }
-    private async Task SetActiveTopic(int topicId)
-    {
-        selectedTopicId = topicId;
-        await LoadBlogs(topicId);
     }
 
     private async Task<bool> CheckIfLiked()
@@ -235,6 +238,6 @@
 
     private async Task OpenComments()
     {
-        NavigationManager.NavigateTo($"/blog/comments/{BlogId}?userId={UserId}");
+        NavigationManager.NavigateTo($"/blog/comments/{BlogId}");
     }
 }

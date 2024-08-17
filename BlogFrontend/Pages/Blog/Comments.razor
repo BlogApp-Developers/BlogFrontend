@@ -8,6 +8,7 @@
 @inject ILocalStorageService LocalStorage
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@inject ILocalStorageService LocalStorageService
 
 <div class="comments-section">
     <h2>Комментарии</h2>
@@ -46,17 +47,19 @@
 
     private List<CommentDto> comments;
     private string newCommentContent;
-    private string UserId;
+    private Guid UserId;
 
     protected override async Task OnInitializedAsync()
     {
-        var uri = new Uri(NavigationManager.Uri);
-        var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
-        UserId = queryParameters["userId"];
-        
-        if (string.IsNullOrEmpty(UserId))
+        var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
+
+        if (Guid.TryParse(userIdString, out var parsedUserId))
         {
-            UserId = await LocalStorage.GetItemAsStringAsync("userId");
+            UserId = parsedUserId;
+        }
+        else
+        {
+            Console.Error.WriteLine("Invalid User ID format.");
         }
 
         await LoadComments();
@@ -86,7 +89,7 @@
         var comment = new Comment
         {
             BlogId = BlogId,
-            UserId = new Guid(UserId),
+            UserId = UserId,
             Content = newCommentContent,
             CreatedAt = DateTime.UtcNow
         };

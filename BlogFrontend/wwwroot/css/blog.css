@@ -21,6 +21,14 @@
     font-weight: 400;
 }
 
+.add-blog-button a img {
+    transition: all 0.4s;
+}
+
+.add-blog-button a:hover img {
+    filter: brightness(0) saturate(100%) invert(68%) sepia(69%) saturate(438%) hue-rotate(45deg) brightness(99%) contrast(95%);
+}
+
 .icons img {
     margin-right: 30px;
 }

@@ -13,6 +13,7 @@
 @inject NavigationManager NavigationManager
 @inject JwtAuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JSRuntime
+@inject ILocalStorageService LocalStorageService
 
 <div class="blog-page" style="color: #fff;">
     <Header OnSearchCompleted="HandleSearchCompleted" />
@@ -26,7 +27,7 @@
                 {
                     @foreach (var blog in blogs)
                     {
-                        <a href="blog/@blog.Id?userId=@UserId" class="blog-link">
+                        <a href="blog/@blog.Id" class="blog-link">
                             <div class="blog-item">
                                 <div class="content">
                                     <div class="author">@blog.UserName</div>
@@ -37,6 +38,10 @@
                             </div>
                         </a>
                     }
+                }
+                else
+                {
+                    <p>No blogs available for the topic: <span style="color: #9BD21C;">@selectedTopicName</span></p>
                 }
             </div>
         </div>
@@ -49,20 +54,23 @@
     
     private BlogDto Blog { get; set; }
     private IEnumerable<Topic> Topics { get; set; }
-    private string UserId { get; set; }
+    private Guid UserId { get; set; }
     private List<Topic> topics = new();
     private List<BlogDto> blogs = new();
     private int? selectedTopicId;
+    private string selectedTopicName;
 
     protected override async Task OnInitializedAsync()
     {
-        var uri = new Uri(NavigationManager.Uri);
-        var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
-        UserId = queryParameters["userId"];
-        
-        if (string.IsNullOrEmpty(UserId))
+        var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
+
+        if (Guid.TryParse(userIdString, out var parsedUserId))
         {
-            UserId = await LocalStorage.GetItemAsStringAsync("userId");
+            UserId = parsedUserId;
+        }
+        else
+        {
+            Console.Error.WriteLine("Invalid User ID format.");
         }
     
         await LoadBlogDetails();
@@ -105,11 +113,14 @@
         }
     }
 
-    private async Task LoadBlogs(int topicId)
+    private async Task LoadBlogs((int topicId, string topicName) topicInfo)
     {
+        selectedTopicName = topicInfo.topicName;
         await SetAuthorizationHeader();
 
-        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
+
+        var response = await HttpClient.SendAsync(request);
         if (response.IsSuccessStatusCode)
         {
             blogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
@@ -117,12 +128,8 @@
         }
         else
         {
-            Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
+            blogs = null;
+            StateHasChanged();
         }
-    }
-    private async Task SetActiveTopic(int topicId)
-    {
-        selectedTopicId = topicId;
-        await LoadBlogs(topicId);
     }
 }

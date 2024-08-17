@@ -22,17 +22,21 @@
             {
                 @foreach (var blog in blogs)
                 {
-                    <a href="blog/@blog.Id?userId=@UserId" class="blog-link">
+                    <a href="blog/@blog.Id" class="blog-link">
                         <div class="blog-item">
                             <div class="content">
                                 <div class="author">@blog.UserName</div>
                                 <div class="title">@blog.Title</div>
                                 <div class="date">@blog.CreationDate.ToShortDateString()</div>
                             </div>
-                            <img class="blog-img" src="@blog.PictureUrl" alt="@blog.Title">
+                            <img class="blog-img" src="http://localhost:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
                         </div>
                     </a>
                 }
+            }
+            else
+            {
+                <p>No blogs available for the topic: <span style="color: #9BD21C;">@selectedTopicName</span></p>
             }
         </div>
         <div class="blog-right-side">
@@ -69,13 +73,20 @@
 
 @code {
     private List<BlogDto> blogs = new();
-    private string UserId { get; set; }
-
+    private Guid UserId { get; set; }
+    private string selectedTopicName;
     protected override async Task OnInitializedAsync()
     {
-        var uri = new Uri(Navigation.Uri);
-        var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
-        UserId = queryParameters["userId"];
+        var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
+
+        if (Guid.TryParse(userIdString, out var parsedUserId))
+        {
+            UserId = parsedUserId;
+        }
+        else
+        {
+            Console.Error.WriteLine("Invalid User ID format.");
+        }
 
         var topicList = await TopicService.GetTopicsAsync();
     }
@@ -98,50 +109,23 @@
         }
     }
 
-    private async Task LoadBlogs(int topicId)
+    private async Task LoadBlogs((int topicId, string topicName) topicInfo)
     {
+        selectedTopicName = topicInfo.topicName;
         await SetAuthorizationHeader();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
 
         var response = await HttpClient.SendAsync(request);
         if (response.IsSuccessStatusCode)
         {
-            var loadedBlogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
-            if (loadedBlogs != null)
-            {
-                blogs = new List<BlogDto>();
-
-                foreach (var blog in loadedBlogs)
-                {
-                    blog.PictureUrl = await GetImageUrlAsync(blog.Id);
-                    blogs.Add(blog);
-                }
-
-                StateHasChanged();
-            }
+            blogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
+            StateHasChanged();
         }
         else
         {
-            Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
-        }
-    }
-
-    private async Task<string> GetImageUrlAsync(Guid blogId)
-    {
-        await SetAuthorizationHeader();
-
-        var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5149/api/Blog/Image/{blogId}");
-
-        var response = await HttpClient.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
-        {
-            return response.RequestMessage.RequestUri.ToString();
-        }
-        else
-        {
-            return "Assets/IMG/DefaultImage.jpg";
+            blogs = null;
+            StateHasChanged();
         }
     }
 }
