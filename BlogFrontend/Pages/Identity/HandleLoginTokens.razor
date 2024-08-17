@@ -22,6 +22,7 @@
             await LocalStorageService.SetItemAsync("userId", userId.ToString());
 
             NavigationManager.NavigateTo($"/Blogs");
+            NavigationManager.NavigateTo("/Blogs", true);
         }
         else
         {

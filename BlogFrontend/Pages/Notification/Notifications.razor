@@ -1,0 +1,109 @@
+@page "/Notifications"
+@attribute [Authorize]
+@using BlogFrontend.Models
+@using BlogFrontend.Providers
+@using BlogFrontend.Services
+@using Blazored.LocalStorage
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Authorization
+@inject HttpClient HttpClient
+@inject ILocalStorageService LocalStorage
+@inject JwtAuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JSRuntime
+@inject ILocalStorageService LocalStorageService
+
+<div class="blog-page" style="color: #fff;">
+    <Header OnSearchCompleted="HandleSearchCompleted" />
+
+    <div class="notifications-container">
+        <div class="notifications-left">
+            <h2>Notifications</h2>
+            <hr style="color: #93939a;">
+            <h3>Today</h3>
+            <div class="notifications-list">
+                @if (notifications != null && notifications.Any())
+                {
+                    foreach (var notification in notifications)
+                    {
+                        <div class="notification-item">
+                            <img src="path_to_avatar_image" class="notification-avatar" alt="Avatar" />
+                            <div class="notification-details">
+                                <span class="notification-user">@notification.Type</span>
+                                <span class="notification-action">@notification.Message</span>
+                                <span class="notification-time">@notification.CreatedAt.ToLocalTime()</span>
+                            </div>
+                            <button class="notification-follow-btn">Follow</button>
+                        </div>
+                        <hr style="color: #93939a;">
+                    }
+                }
+                else
+                {
+                    <p>No notifications found.</p>
+                }
+            </div>
+        </div>
+        <div class="notifications-right">
+            <div class="user-profile-card">
+                <img src="path_to_profile_image" class="user-profile-avatar" alt="Profile Avatar" />
+                <h3>Barbara Matthews</h3>
+                <p>Graphic and UI/UX designer</p>
+                <div class="user-profile-stats">
+                    <span>275 followers</span>
+                    <span>345 following</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private Guid UserId { get; set; }
+    private List<Notification> notifications = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
+
+        if (Guid.TryParse(userIdString, out var parsedUserId))
+        {
+            UserId = parsedUserId;
+            await LoadNotifications();
+        }
+        else
+        {
+            Console.Error.WriteLine("Invalid User ID format.");
+        }
+    }
+
+    private async Task LoadNotifications()
+    {
+        await SetAuthorizationHeader();
+        
+        try
+        {
+            notifications = await HttpClient.GetFromJsonAsync<List<Notification>>($"http://localhost:5205/api/Notifications/{UserId}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to load notifications: {ex.Message}");
+        }
+    }
+
+    private async Task SetAuthorizationHeader()
+    {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "jwt");
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            token = token.Trim('"');
+            HttpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+        }
+    }
+
+    private void HandleSearchCompleted(List<BlogDto> searchResults)
+    {
+        
+    }
+}
