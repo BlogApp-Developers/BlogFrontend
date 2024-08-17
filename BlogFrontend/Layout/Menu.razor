@@ -30,6 +30,8 @@
 @code {
     [Parameter]
     public EventCallback<(int, string)> OnTopicSelected { get; set; }
+    [Parameter]
+    public EventCallback OnTopicsUpdated { get; set; }
 
     private List<Topic> topics;
     private int? selectedTopicId;
@@ -58,6 +60,11 @@
         }
     }
 
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadTopics();
+    }
+
     private async Task SetAuthorizationHeader()
     {
         var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "jwt");
@@ -71,32 +78,32 @@
     }
 
     private async Task LoadTopics()
-{
-    try
     {
-        await SetAuthorizationHeader();
-
-        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Topic/GetUserTopics/{userId}");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var json = await response.Content.ReadAsStringAsync();
-            json = RemoveMetadataFromJson(json);
-            topics = JsonSerializer.Deserialize<List<Topic>>(json, new JsonSerializerOptions
+            await SetAuthorizationHeader();
+
+            var response = await HttpClient.GetAsync($"http://localhost:5149/api/Topic/GetUserTopics/{userId}");
+            if (response.IsSuccessStatusCode)
             {
-                PropertyNameCaseInsensitive = true
-            });
+                var json = await response.Content.ReadAsStringAsync();
+                json = RemoveMetadataFromJson(json);
+                topics = JsonSerializer.Deserialize<List<Topic>>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                StateHasChanged();
+            }
+            else
+            {
+                Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
+            Console.Error.WriteLine($"Error loading topics: {ex.Message}");
         }
     }
-    catch (Exception ex)
-    {
-        Console.Error.WriteLine($"Error loading topics: {ex.Message}");
-    }
-}
-
 
     private async Task SetActiveTopic(int topicId, string topicName)
     {

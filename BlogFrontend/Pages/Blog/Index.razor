@@ -15,7 +15,7 @@
 
 <div class="blog-page">
     <Header OnSearchCompleted="HandleSearchCompleted" />
-    <Menu OnTopicSelected="LoadBlogs" />
+    <Menu OnTopicSelected="LoadBlogs"  OnTopicsUpdated="LoadTopicsInMenu" />
     <div class="blog-container">
         <div class="blog-list" id="blog-list">
             @if (blogs != null)
@@ -43,10 +43,17 @@
             <div class="recommendation-block">
                 <h2>Recommended topics</h2>
                 <div class="recommendation-block-topics">
-                    <button>Photography</button>
-                    <button>Poetry</button>
-                    <button>Space</button>
-                    <button>Money</button>
+                    @if (recommendedTopics != null && recommendedTopics.Any())
+                    {
+                        @foreach (var topic in recommendedTopics)
+                        {
+                            <button @onclick="() => AddTopicToUser(topic.Id)">@topic.Name</button>
+                        }
+                    }
+                    else
+                    {
+                        <p>No more recommended topics</p>
+                    }
                 </div>
             </div>
             <div class="follow-block">
@@ -75,6 +82,8 @@
     private List<BlogDto> blogs = new();
     private Guid UserId { get; set; }
     private string selectedTopicName;
+    private List<Topic> recommendedTopics = new List<Topic>();
+
     protected override async Task OnInitializedAsync()
     {
         var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
@@ -87,7 +96,7 @@
         {
             Console.Error.WriteLine("Invalid User ID format.");
         }
-
+        await LoadRecommendedTopics();
         var topicList = await TopicService.GetTopicsAsync();
     }
 
@@ -127,5 +136,33 @@
             blogs = null;
             StateHasChanged();
         }
+    }
+
+    private async Task LoadRecommendedTopics()
+    {
+        await SetAuthorizationHeader();
+        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Topic/RecommendedTopics/{UserId}");
+        if (response.IsSuccessStatusCode)
+        {
+            recommendedTopics = await response.Content.ReadFromJsonAsync<List<Topic>>() ?? new List<Topic>();
+        }
+    }
+
+    private async Task AddTopicToUser(int topicId)
+    {
+        await SetAuthorizationHeader();
+        var response = await HttpClient.PostAsync($"http://localhost:5149/api/Topic/AddTopicToUser/{UserId}/{topicId}", null);
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadRecommendedTopics();
+
+            await LoadTopicsInMenu();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadTopicsInMenu()
+    {
+        await InvokeAsync(StateHasChanged);
     }
 }
