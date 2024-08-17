@@ -1,9 +1,13 @@
 @page "/blog/comments/{BlogId:guid}"
+@attribute [Authorize]
 @using Blazored.LocalStorage
 @using BlogFrontend.Models
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient HttpClient
 @inject ILocalStorageService LocalStorage
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <div class="comments-section">
     <h2>Комментарии</h2>
@@ -56,6 +60,18 @@
         }
 
         await LoadComments();
+    }
+
+    private async Task SetAuthorizationHeader()
+    {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "jwt");
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            token = token.Trim('"');
+            HttpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+        }
     }
 
     private async Task LoadComments()

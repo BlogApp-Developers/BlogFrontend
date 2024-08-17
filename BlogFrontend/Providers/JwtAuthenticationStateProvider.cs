@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Json;
 using System.Security.Claims;
+using System.Text.Json;
 using Blazored.LocalStorage;
 using BlogFrontend.Models;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -10,92 +11,39 @@ namespace BlogFrontend.Providers;
 
 public class JwtAuthenticationStateProvider : AuthenticationStateProvider
 {
-    private readonly ILocalStorageService localStorageService;
-    private readonly IHttpClientFactory httpClientFactory;
-    private readonly JwtSecurityTokenHandler jwtSecurityTokenHandler;
+    private readonly ILocalStorageService _localStorage;
+    private readonly HttpClient _httpClient;
 
-    public JwtAuthenticationStateProvider(
-        ILocalStorageService localStorageService,
-        IHttpClientFactory httpClientFactory)
+    public JwtAuthenticationStateProvider(ILocalStorageService localStorage, HttpClient httpClient)
     {
-        this.localStorageService = localStorageService;
-        this.httpClientFactory = httpClientFactory;
-        this.jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
-    }
-
-    private async Task<ClaimsIdentity?> GetClaimsIdentity() {
-        var jwt = await this.localStorageService.GetItemAsStringAsync("jwt");
-        var refresh = await this.localStorageService.GetItemAsStringAsync("refresh");
-        if(string.IsNullOrWhiteSpace(jwt) || string.IsNullOrWhiteSpace(refresh))
-            return null;
-
-        var result = await this.jwtSecurityTokenHandler.ValidateTokenAsync(
-            jwt, 
-            new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidIssuer = "BlogFrontend",
-
-                ValidateAudience = true,
-                ValidAudience = "Blog Frontend",
-
-                SignatureValidator = (token, validationParameters) => new JwtSecurityToken(token),
-
-                RequireExpirationTime = true,
-                ValidateLifetime = true,
-
-                LifetimeValidator = (notBefore, expires, securityToken, validationParameters) => expires > DateTime.UtcNow,
-            });
-
-        if(result.IsValid == false) {
-            if(result.Exception is SecurityTokenInvalidLifetimeException) {
-                var identityServiceHttpClient = httpClientFactory.CreateClient("IdentityService");
-                identityServiceHttpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwt}");
-                var httpResult = await identityServiceHttpClient.PutAsync($"/api/Identity/Token?refresh={refresh}", null);
-
-                if(httpResult.IsSuccessStatusCode == false) {
-                    return null;
-                }
-                
-                var refreshAccessTokens = await httpResult.Content.ReadFromJsonAsync<RefreshAccessTokens>();
-
-                if(refreshAccessTokens is null) {
-                    return null;
-                }
-                
-                await this.localStorageService.SetItemAsStringAsync("jwt", refreshAccessTokens.Access);
-                await this.localStorageService.SetItemAsStringAsync("refresh", refreshAccessTokens.Refresh);
-
-                var newTokenObj = this.jwtSecurityTokenHandler.ReadJwtToken(jwt);
-                return new ClaimsIdentity(newTokenObj.Claims, "jwt");
-            }
-
-            return null;
-        }
-
-        var tokenObj = this.jwtSecurityTokenHandler.ReadJwtToken(jwt);
-
-        return new ClaimsIdentity(tokenObj.Claims, "jwt");
+        _localStorage = localStorage;
+        _httpClient = httpClient;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var claimsIdentity = await GetClaimsIdentity();
+        var token = await _localStorage.GetItemAsync<string>("jwt");
+        var identity = string.IsNullOrEmpty(token) ? new ClaimsIdentity() : new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt");
 
-        var claimsPrincipal = claimsIdentity == null 
-            ? new ClaimsPrincipal()
-            : new ClaimsPrincipal(claimsIdentity);
-
-        var authenticationState = new AuthenticationState(claimsPrincipal);
-
-        return authenticationState;
+        var user = new ClaimsPrincipal(identity);
+        return new AuthenticationState(user);
     }
 
-    public async Task<string?> GetUserIdAsync()
+    private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
     {
-        var authState = await GetAuthenticationStateAsync();
-        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return userId;
+        var payload = jwt.Split('.')[1];
+        var jsonBytes = ParseBase64WithoutPadding(payload);
+        var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
+        return keyValuePairs.Select(kvp => new Claim(kvp.Key, kvp.Value.ToString()));
     }
 
+    private static byte[] ParseBase64WithoutPadding(string base64)
+    {
+        switch (base64.Length % 4)
+        {
+            case 2: base64 += "=="; break;
+            case 3: base64 += "="; break;
+        }
+        return Convert.FromBase64String(base64);
+    }
 }

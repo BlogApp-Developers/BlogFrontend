@@ -2,10 +2,20 @@
 @page "/Identity/confirmation/{email}"
 
 @inject NavigationManager Navigation
+@inject HttpClient HttpClient
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
 
 @code {
     [Parameter]
     public string Email { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        Email = queryParameters["email"];
+    }
 }
 
 <div class="container">
@@ -16,7 +26,7 @@
                 <div class="inbox">
                     <img src="Assets/IMG/mail.png" alt="">
                     <h1>Check<br>your inbox</h1>
-                    <p>Click the link we sent to<br>@Email to sign up.</p>
+                    <p>Click the link we sent to<br><span style="font-weight: bold;">@Email</span> to sign up.</p>
                 </div>
             </div>
         </div>

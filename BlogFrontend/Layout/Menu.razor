@@ -2,8 +2,13 @@
 @using BlogFrontend.Models
 @using System.Text.Json
 @using System.Text.RegularExpressions
+@using BlogFrontend.Providers
+@using System.Net.Http.Headers
 @inject HttpClient HttpClient
 @inject NavigationManager Navigation
+@inject JwtAuthenticationStateProvider AuthStateProvider
+@inject ILocalStorageService LocalStorageService
+@inject IJSRuntime JSRuntime
 
 <div class="menu" id="menu" data-first-topic-id="@firstTopicId">
     <div class="menu-content menu-items dragscroll">
@@ -33,23 +38,16 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var uri = new Uri(Navigation.Uri);
-        var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        if (queryParams.TryGetValue("userId", out var extractedUserId))
+        var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
+
+        if (Guid.TryParse(userIdString, out var parsedUserId))
         {
-            if (Guid.TryParse(extractedUserId.FirstOrDefault(), out var parsedUserId))
-            {
-                userId = parsedUserId;
-                await LoadTopics();
-            }
-            else
-            {
-                Console.Error.WriteLine("Invalid User ID format.");
-            }
+            userId = parsedUserId;
+            await LoadTopics();
         }
         else
         {
-            Console.Error.WriteLine("User ID is missing in the URL");
+            Console.Error.WriteLine("Invalid User ID format.");
         }
 
         if (topics != null && topics.Any())
@@ -60,30 +58,45 @@
         }
     }
 
-    private async Task LoadTopics()
+    private async Task SetAuthorizationHeader()
     {
-        try
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "jwt");
+
+        if (!string.IsNullOrEmpty(token))
         {
-            var response = await HttpClient.GetAsync($"http://localhost:5149/api/Topic/GetUserTopics/{userId}");
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                json = RemoveMetadataFromJson(json);
-                topics = JsonSerializer.Deserialize<List<Topic>>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-            }
-            else
-            {
-                Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error loading topics: {ex.Message}");
+            token = token.Trim('"');
+            HttpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
         }
     }
+
+    private async Task LoadTopics()
+{
+    try
+    {
+        await SetAuthorizationHeader();
+
+        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Topic/GetUserTopics/{userId}");
+        if (response.IsSuccessStatusCode)
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            json = RemoveMetadataFromJson(json);
+            topics = JsonSerializer.Deserialize<List<Topic>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        }
+        else
+        {
+            Console.Error.WriteLine($"Error: {response.ReasonPhrase}");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Error loading topics: {ex.Message}");
+    }
+}
+
 
     private async Task SetActiveTopic(int topicId)
     {

@@ -1,12 +1,18 @@
 @page "/blog/{BlogId:guid}"
+@attribute [Authorize]
 @using Blazored.LocalStorage
 @using BlogFrontend.Models
 @using BlogFrontend.Services
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Authorization
 @inject TopicService TopicService
 @inject BlogService BlogService
 @inject HttpClient HttpClient
 @inject ILocalStorageService LocalStorage
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject ILocalStorageService LocalStorageService
+
 
 <div class="blog-page" style="color: #fff;">
     <Header OnSearchCompleted="HandleSearchCompleted" />
@@ -69,7 +75,7 @@
     
     private BlogDto Blog { get; set; }
     private IEnumerable<Topic> Topics { get; set; }
-    private string UserId { get; set; }
+    private Guid UserId { get; set; }
     private List<Topic> topics = new();
     private List<BlogDto> blogs = new();
     private int? selectedTopicId;
@@ -77,13 +83,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var uri = new Uri(NavigationManager.Uri);
-        var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
-        UserId = queryParameters["userId"];
-        
-        if (string.IsNullOrEmpty(UserId))
+        var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
+
+        if (Guid.TryParse(userIdString, out var parsedUserId))
         {
-            UserId = await LocalStorage.GetItemAsStringAsync("userId");
+            UserId = parsedUserId;
+        }
+        else
+        {
+            Console.Error.WriteLine("Invalid User ID format.");
         }
     
         await LoadBlogDetails();
@@ -102,8 +110,22 @@
         StateHasChanged();
     }
 
+    private async Task SetAuthorizationHeader()
+    {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "jwt");
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            token = token.Trim('"');
+            HttpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+        }
+    }
+
     private async Task<int> GetLikeCount()
     {
+        await SetAuthorizationHeader();
+
         var response = await HttpClient.GetAsync($"http://localhost:5149/api/Likes/GetLikesForBlog/{BlogId}");
         
         if (response.IsSuccessStatusCode)
@@ -117,6 +139,8 @@
 
     private async Task LoadBlogDetails()
     {
+        await SetAuthorizationHeader();
+
         Blog = await HttpClient.GetFromJsonAsync<BlogDto>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
             StateHasChanged();
         if (Blog == null)
@@ -133,6 +157,8 @@
 
     private async Task SearchBlogsByTitle(string query)
     {
+        await SetAuthorizationHeader();
+
         var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByTitle?title={Uri.EscapeDataString(query)}");
 
         if (response.IsSuccessStatusCode)
@@ -143,6 +169,8 @@
 
     private async Task LoadBlogs(int topicId)
     {
+        await SetAuthorizationHeader();
+
         var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
         StateHasChanged();
         if (response.IsSuccessStatusCode)
@@ -163,6 +191,8 @@
 
     private async Task<bool> CheckIfLiked()
     {
+        await SetAuthorizationHeader();
+
         var response = await HttpClient.GetAsync($"http://localhost:5149/api/Likes/IsLiked?blogId={BlogId}&userId={UserId}");
 
         if (response.IsSuccessStatusCode)
@@ -176,10 +206,12 @@
 
     private async Task LikeBlog()
     {
+        await SetAuthorizationHeader();
+
         var likeRequest = new
         {
             BlogId = BlogId,
-            UserId = new Guid(UserId)
+            UserId = UserId
         };
 
         var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Likes/LikeBlog", likeRequest);

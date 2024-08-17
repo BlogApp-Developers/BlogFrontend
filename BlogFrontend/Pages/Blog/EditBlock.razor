@@ -1,10 +1,12 @@
 @page "/EditBlock"
+@attribute [Authorize]
 @using System.Net.Http.Headers
 @inject NavigationManager NavigationManager
 @inject HttpClient HttpClient
 @inject IJSRuntime JSRuntime
 @using BlogFrontend.Models
 @using BlogFrontend.Providers
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 
 @code {
@@ -59,8 +61,22 @@
         await LoadTopics();
     }
 
+    private async Task SetAuthorizationHeader()
+    {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "jwt");
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            token = token.Trim('"');
+            HttpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+        }
+    }
+
     private async Task LoadTopics()
     {
+        await SetAuthorizationHeader();
+
         var response = await HttpClient.GetAsync("http://localhost:5149/api/Topic/GetAllTopics");
         if (response.IsSuccessStatusCode)
         {
@@ -78,35 +94,37 @@
     }
 
     private async Task CreateBlog()
-{
-    if (selectedImage == null || BlogForm.TopicId == 0 || string.IsNullOrEmpty(BlogForm.Title) || string.IsNullOrEmpty(BlogForm.Text))
     {
-        Console.WriteLine("Form fields are not correctly filled.");
-        return;
-    }
+        await SetAuthorizationHeader();
 
-    var formData = new MultipartFormDataContent();
-
-    if (selectedImage != null)
-    {
-        var streamContent = new StreamContent(selectedImage.OpenReadStream(maxAllowedSize: 1024 * 1024 * 15));
-        streamContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
+        if (selectedImage == null || BlogForm.TopicId == 0 || string.IsNullOrEmpty(BlogForm.Title) || string.IsNullOrEmpty(BlogForm.Text))
         {
-            Name = "image",
-            FileName = selectedImage.Name
-        };
-        formData.Add(streamContent);
-    }
+            Console.WriteLine("Form fields are not correctly filled.");
+            return;
+        }
 
-    formData.Add(new StringContent(BlogForm.Title), "title");
-    formData.Add(new StringContent(BlogForm.Text), "text");
-    formData.Add(new StringContent(BlogForm.TopicId.ToString()), "topicId");
-    formData.Add(new StringContent(userId ?? string.Empty), "userId");
+        var formData = new MultipartFormDataContent();
 
-    var response = await HttpClient.PostAsync("http://localhost:5149/api/Blog/CreateBlog", formData);
-    var responseContent = await response.Content.ReadAsStringAsync();
-    NavigationManager.NavigateTo($"/Blogs?userId={userId}");
-}   
+        if (selectedImage != null)
+        {
+            var streamContent = new StreamContent(selectedImage.OpenReadStream(maxAllowedSize: 1024 * 1024 * 15));
+            streamContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
+            {
+                Name = "image",
+                FileName = selectedImage.Name
+            };
+            formData.Add(streamContent);
+        }
+
+        formData.Add(new StringContent(BlogForm.Title), "title");
+        formData.Add(new StringContent(BlogForm.Text), "text");
+        formData.Add(new StringContent(BlogForm.TopicId.ToString()), "topicId");
+        formData.Add(new StringContent(userId ?? string.Empty), "userId");
+
+        var response = await HttpClient.PostAsync("http://localhost:5149/api/Blog/CreateBlog", formData);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        NavigationManager.NavigateTo($"/Blogs");
+    }   
 
 }
 

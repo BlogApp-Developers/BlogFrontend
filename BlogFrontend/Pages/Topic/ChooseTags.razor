@@ -3,9 +3,13 @@
 @using BlogFrontend.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.WebUtilities;
+@using System.Net.Http.Headers
 @inject TopicService TopicService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILocalStorageService LocalStorageService
+@inject HttpClient HttpClient
+@inject IJSRuntime JSRuntime
 
 <style>
     .topic-button {
@@ -76,32 +80,31 @@
         StateHasChanged();
     }
 
+    private async Task SetAuthorizationHeader()
+    {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "jwt");
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            token = token.Trim('"');
+            HttpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+        }
+    }
+
     private async Task SubmitSelectedTopics()
     {
+        await SetAuthorizationHeader();
+
         if (selectedTopics.Count >= 3)
         {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-            var userIdString = user.FindFirst(c => c.Type == "NameIdentifier")?.Value;
-
-            if (string.IsNullOrEmpty(userIdString))
-            {
-                var uri = new Uri(Navigation.Uri);
-                var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-                userIdString = queryParams.TryGetValue("userId", out var extractedUserId) ? extractedUserId.FirstOrDefault() : null;
-
-                if (string.IsNullOrEmpty(userIdString))
-                {
-                    Console.Error.WriteLine("Error: User ID is null or empty.");
-                    return;
-                }
-            }
+            var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
 
             if (Guid.TryParse(userIdString, out Guid userId))
             {
                 if (await TopicService.CreatePreferencesAsync(userId, selectedTopics))
                 {
-                    Navigation.NavigateTo($"/Blogs?userId={userId}");
+                    Navigation.NavigateTo("/Blogs");
                 }
                 else
                 {
@@ -118,4 +121,5 @@
             Console.Error.WriteLine("Please choose at least three topics.");
         }
     }
+
 }

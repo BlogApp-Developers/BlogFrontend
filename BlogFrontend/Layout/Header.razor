@@ -16,8 +16,10 @@
         public string Text { get; set; }
         public IBrowserFile Image { get; set; }
     }
+
     [Parameter]
     public EventCallback<List<BlogDto>> OnSearchCompleted { get; set; }
+
     private List<Topic> Topics { get; set; } = new List<Topic>();
     private BlogFormModel BlogForm { get; set; } = new BlogFormModel();
     private string SearchQuery { get; set; }
@@ -27,16 +29,18 @@
     {
         userId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userId");
 
-    userId = userId?.Trim('"');
+        userId = userId?.Trim('"');
 
-    if (!Guid.TryParse(userId, out _))
-    {
-        userId = null;
-    }
+        if (!Guid.TryParse(userId, out _))
+        {
+            userId = null;
+        }
     }
 
     private async Task SearchBlogs()
     {
+        await SetAuthorizationHeader();
+
         var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/SearchBlogsByTitle/{Uri.EscapeDataString(SearchQuery)}");
         var data = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
 
@@ -50,12 +54,24 @@
     {
         await SearchBlogs();
     }
+
+    private async Task SetAuthorizationHeader()
+    {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "jwt");
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            token = token.Trim('"');
+            HttpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+        }
+    }
 }
 
 <div class="header">
     <div class="header-block left-side">
         <div class="logo">
-            <a href="/Blogs?userId=@userId"><img src="Assets/IMG/LogoImg.png" alt="Logo" /></a>
+            <a href="/Blogs"><img src="Assets/IMG/LogoImg.png" alt="Logo" /></a>
         </div>
         <div class="search-container">
             <form id="searchForm" class="search-bar" method="get" action="javascript:void(0);" @onsubmit="HandleSearchSubmit">

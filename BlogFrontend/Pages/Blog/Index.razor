@@ -1,12 +1,17 @@
 @page "/Blogs"
+@attribute [Authorize]
 @using BlogFrontend.Models
 @using BlogFrontend.Providers
 @using BlogFrontend.Services
+@using Microsoft.AspNetCore.Authorization
+@using System.Net.Http.Headers
 @inject TopicService TopicService
 @inject BlogService BlogService
 @inject NavigationManager Navigation
 @inject JwtAuthenticationStateProvider AuthStateProvider
 @inject HttpClient HttpClient
+@inject ILocalStorageService LocalStorageService
+@inject IJSRuntime JSRuntime
 
 <div class="blog-page">
     <Header OnSearchCompleted="HandleSearchCompleted" />
@@ -24,7 +29,7 @@
                                 <div class="title">@blog.Title</div>
                                 <div class="date">@blog.CreationDate.ToShortDateString()</div>
                             </div>
-                            <img class="blog-img" src="http://localhost:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
+                            <img class="blog-img" src="@blog.PictureUrl" alt="@blog.Title">
                         </div>
                     </a>
                 }
@@ -81,13 +86,40 @@
         StateHasChanged();
     }
 
+    private async Task SetAuthorizationHeader()
+    {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "jwt");
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            token = token.Trim('"');
+            HttpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+        }
+    }
+
     private async Task LoadBlogs(int topicId)
     {
-        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
+        await SetAuthorizationHeader();
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicId}");
+
+        var response = await HttpClient.SendAsync(request);
         if (response.IsSuccessStatusCode)
         {
-            blogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
-            StateHasChanged();
+            var loadedBlogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
+            if (loadedBlogs != null)
+            {
+                blogs = new List<BlogDto>();
+
+                foreach (var blog in loadedBlogs)
+                {
+                    blog.PictureUrl = await GetImageUrlAsync(blog.Id);
+                    blogs.Add(blog);
+                }
+
+                StateHasChanged();
+            }
         }
         else
         {
@@ -95,5 +127,21 @@
         }
     }
 
-}
+    private async Task<string> GetImageUrlAsync(Guid blogId)
+    {
+        await SetAuthorizationHeader();
 
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5149/api/Blog/Image/{blogId}");
+
+        var response = await HttpClient.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return response.RequestMessage.RequestUri.ToString();
+        }
+        else
+        {
+            return "Assets/IMG/DefaultImage.jpg";
+        }
+    }
+}

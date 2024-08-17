@@ -12,10 +12,9 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
-builder.Services.AddAuthorizationCore();
 builder.Services.AddBlazoredLocalStorage();
 
+builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<JwtAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<JwtAuthenticationStateProvider>());
 
@@ -34,5 +33,6 @@ builder.Services.AddHttpClient("IdentityService", httpClient =>
     httpClient.BaseAddress = new Uri("http://localhost:5149");
 });
 builder.Services.AddBlazoredLocalStorageAsSingleton();
+builder.Services.AddBlazoredLocalStorage();
 
 await builder.Build().RunAsync();
