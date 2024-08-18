@@ -1,4 +1,5 @@
 @page "/Notifications"
+@attribute [Authorize]
 @using BlogFrontend.Models
 @using BlogFrontend.Providers
 @using BlogFrontend.Services
@@ -24,11 +25,12 @@
                     foreach (var notification in notifications)
                     {
                         <div class="notification-item">
-                            <img src="path_to_avatar_image" class="notification-avatar" alt="Avatar" />
+                            <img src="Assets/IMG/DefaultAvatar.png" class="notification-avatar" alt="Avatar" />
                             <div class="notification-details">
+                                <span>@userName</span>
                                 <span class="notification-user">@notification.Type</span>
                                 <span class="notification-action">@notification.Message</span>
-                                <span class="notification-time">@notification.CreatedAt.ToLocalTime()</span>
+                                <span class="notification-time">@notification.CreatedAt.ToShortDateString()</span>
                             </div>
                             <button class="notification-follow-btn">Follow</button>
                         </div>
@@ -43,7 +45,7 @@
         </div>
         <div class="notifications-right">
             <div class="user-profile-card">
-                <img src="path_to_profile_image" class="user-profile-avatar" alt="Profile Avatar" />
+                <img src="Assets/IMG/DefaultAvatar.png" class="user-profile-avatar" alt="Profile Avatar" />
                 <h3>Barbara Matthews</h3>
                 <p>Graphic and UI/UX designer</p>
                 <div class="user-profile-stats">
@@ -58,6 +60,7 @@
 @code {
     private Guid UserId { get; set; }
     private List<Notification> notifications = new();
+    private string userName;
 
     protected override async Task OnInitializedAsync()
     {
@@ -72,6 +75,14 @@
         {
             Console.Error.WriteLine("Invalid User ID format.");
         }
+
+        var token = await LocalStorageService.GetItemAsync<string>("jwt");
+        if (!string.IsNullOrEmpty(token))
+        {
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            userName = jwtToken.Claims.FirstOrDefault(c => c.Type == "UserName")?.Value;
+        }
     }
 
     private async Task LoadNotifications()
@@ -80,7 +91,7 @@
         
         try
         {
-            notifications = await HttpClient.GetFromJsonAsync<List<Notification>>($"http://localhost:5205/api/Notifications/{UserId}");
+            notifications = await HttpClient.GetFromJsonAsync<List<Notification>>($"http://localhost:5205/api/Notification/GetUserNotifications/{UserId}");
         }
         catch (Exception ex)
         {

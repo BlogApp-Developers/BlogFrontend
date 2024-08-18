@@ -35,9 +35,9 @@
             </div>
             <hr style="color: #fff;">
             <div class="blog-actions">
-                <button @onclick="LikeBlog" class="like-button">
+                <button @onclick="ToggleLike" class="like-button">
                     <img src="@LikeIcon" alt="Like" />
-                    <span>@Blog.LikesCount Likes</span>
+                    <span>@Blog.LikesCount</span>
                 </button>
                 <button @onclick="OpenComments" class="comment-button">
                     <img src="Assets/IMG/comment-icon.svg" alt="Comment" />
@@ -196,21 +196,21 @@
     }
 
     private async Task<bool> CheckIfLiked()
+{
+    await SetAuthorizationHeader();
+
+    var response = await HttpClient.GetAsync($"http://localhost:5149/api/Likes/IsLiked?blogId={BlogId}&userId={UserId}");
+
+    if (response.IsSuccessStatusCode)
     {
-        await SetAuthorizationHeader();
-
-        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Likes/IsLiked?blogId={BlogId}&userId={UserId}");
-
-        if (response.IsSuccessStatusCode)
-        {
-            var isLiked = await response.Content.ReadFromJsonAsync<bool>();
-            return isLiked;
-        }
-
-        return false;
+        var isLiked = await response.Content.ReadFromJsonAsync<bool>();
+        return isLiked;
     }
 
-    private async Task LikeBlog()
+    return false;
+}
+
+    private async Task ToggleLike()
     {
         await SetAuthorizationHeader();
 
@@ -220,35 +220,41 @@
             UserId = UserId
         };
 
-        var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Likes/LikeBlog", likeRequest);
+        string endpoint = await CheckIfLiked() ? "UnlikeBlog" : "LikeBlog";
+
+        var response = await HttpClient.PostAsJsonAsync($"http://localhost:5149/api/Likes/{endpoint}", likeRequest);
 
         if (response.IsSuccessStatusCode)
         {
             var likeCount = await response.Content.ReadFromJsonAsync<int>();
-            
             Blog.LikesCount = likeCount;
 
             LikeIcon = (LikeIcon == "Assets/IMG/like-icon-gray.svg") ? "Assets/IMG/like-icon-red.svg" : "Assets/IMG/like-icon-gray.svg";
-            var notification = new Notification
+            
+            if (endpoint == "LikeBlog")
             {
-                UserId = UserId,
-                Message = $"User {UserId} liked your blog",
-                Type = "Like"
-            };
-
-            await CreateNotification(notification);
+                var notification = new Notification
+                {
+                    UserId = Blog.UserId,
+                    Message = $"User {UserId} liked your blog",
+                    Type = "Like"
+                };
+                await CreateNotification(notification);
+            }
+            
             StateHasChanged();
         }
         else
         {
-            Console.Error.WriteLine($"Error when liking: {response.ReasonPhrase}");
+            Console.Error.WriteLine($"Error when toggling like: {response.ReasonPhrase}");
         }
     }
+
 
     private async Task CreateNotification(Notification notification)
     {
         await SetAuthorizationHeader();
-        var response = await HttpClient.PostAsJsonAsync("http://localhost:5205/api/Notifications/CreateNotification", notification);
+        var response = await HttpClient.PostAsJsonAsync("http://localhost:5205/api/Notification/CreateNotification", notification);
 
         if (response.IsSuccessStatusCode)
         {

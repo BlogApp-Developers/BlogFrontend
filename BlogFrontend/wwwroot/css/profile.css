@@ -1,0 +1,30 @@
+.profile-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.profile-left h2 {
+    font-family: "Familjen Grotesk";
+    font-size: 36px;
+    font-weight: 700;
+    text-align: left;
+}
+
+.profile-left {
+    width: 854px;
+}
+
+.profile-right {
+    color: #000;
+    background-color: #9BD21C;
+    padding: 20px;
+    border-radius: 30px;
+    text-align: center;
+    width: 468px;
+    height: 800px;
+    margin-top: -60px;
+}
+
+.profile-list {
+    margin-top: 20px;
+}

@@ -14,4 +14,5 @@ public class BlogDto
     public string PictureUrl { get; set; } 
     public DateTime CreationDate { get; set; }
     public int LikesCount { get; set; }
+    public Guid UserId { get; set; }
 }

@@ -13,13 +13,13 @@
 
 <div class="blog-page" style="color: #fff;">
     <Header OnSearchCompleted="HandleSearchCompleted" />
-    <div class="menu" id="menu" data-first-topic-id="@firstTopicId">
+    <div class="menu" id="menu">
         <div class="menu-content menu-items dragscroll">
-            <a class="menu-item">Public</a>
-            <a class="menu-item">About me</a>
+            <a class="menu-item @(selectedMenuItem == "Public" ? "active" : "")" @onclick='() => SelectMenuItem("Public")'>Public</a>
+            @* <a class="menu-item @(selectedMenuItem == "About me" ? "active" : "")" @onclick='() => SelectMenuItem("About me")'>About me</a> *@
         </div>
     </div>
-    <div class="notifications-container">
+    <div class="profile-container">
         <div class="blog-list" id="blog-list">
             @if (blogs != null)
             {
@@ -42,9 +42,9 @@
                 <p>No blogs available for the topic: <span style="color: #9BD21C;">@selectedTopicName</span></p>
             }
         </div>
-        <div class="notifications-right">
+        <div class="profile-right">
             <div class="user-profile-card">
-                <img src="path_to_profile_image" class="user-profile-avatar" alt="Profile Avatar" />
+                <img src="Assets/IMG/DefaultAvatar.png" class="user-profile-avatar" alt="Profile Avatar" />
                 <h3>Barbara Matthews</h3>
                 <p>Graphic and UI/UX designer</p>
                 <div class="user-profile-stats">
@@ -58,10 +58,10 @@
 
 @code {
     private Guid UserId { get; set; }
-    private List<Notification> notifications = new();
-    private int? firstTopicId;
     private List<BlogDto> blogs = new();
     private string selectedTopicName;
+    private string selectedMenuItem = "Public";
+
     protected override async Task OnInitializedAsync()
     {
         var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
@@ -69,10 +69,34 @@
         if (Guid.TryParse(userIdString, out var parsedUserId))
         {
             UserId = parsedUserId;
+            await LoadBlogs();
         }
         else
         {
             Console.Error.WriteLine("Invalid User ID format.");
+        }
+    }
+
+    private async Task LoadBlogs()
+    {
+        try
+        {
+            await SetAuthorizationHeader();
+
+            var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/GetBlogByUserId/{UserId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                blogs = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
+            }
+            else
+            {
+                Console.Error.WriteLine($"Error fetching blogs: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"An error occurred while fetching blogs: {ex.Message}");
         }
     }
 
@@ -92,4 +116,10 @@
     {
         
     }
+
+    private void SelectMenuItem(string menuItem)
+    {
+        selectedMenuItem = menuItem;
+    }
 }
+
