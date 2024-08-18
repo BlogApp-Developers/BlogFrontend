@@ -77,6 +77,21 @@
         }
     }
 
+    private async Task CreateNotification(Notification notification)
+    {
+        await SetAuthorizationHeader();
+        var response = await HttpClient.PostAsJsonAsync("http://localhost:5205/api/Notifications/CreateNotification", notification);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("Notification created successfully.");
+        }
+        else
+        {
+            Console.Error.WriteLine("Failed to create notification.");
+        }
+    }
+
     private async Task LoadComments()
     {
         comments = await HttpClient.GetFromJsonAsync<List<CommentDto>>($"http://localhost:5149/api/Comments/blog/{BlogId}");
@@ -84,8 +99,6 @@
 
     private async Task SubmitComment()
     {
-        
-        
         var comment = new Comment
         {
             BlogId = BlogId,
@@ -99,6 +112,15 @@
         if (response.IsSuccessStatusCode)
         {
             newCommentContent = string.Empty;
+
+            var notification = new Notification
+            {
+                UserId = UserId,
+                Message = $"User {UserId} opened comments",
+                Type = "Comment"
+            };
+
+            await CreateNotification(notification);
             await LoadComments();
         }
         else

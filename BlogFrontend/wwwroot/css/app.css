@@ -106,3 +106,17 @@ a, .btn-link {
 code {
     color: #c02d76;
 }
+
+::-webkit-scrollbar {
+    width: 15px;
+}
+
+::-webkit-scrollbar-track {
+    background: #14171a;
+    box-shadow: 0 0 2px rgba(0, 0, 0, .2) inset;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #969696;
+    background: linear-gradient(to bottom, #969696, #2c2e34)
+}

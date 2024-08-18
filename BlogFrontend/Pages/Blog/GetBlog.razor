@@ -31,7 +31,7 @@
                 }
             </div>
             <div class="blog-image">
-                <img src="http://localhost:5149/api/Blog/Image/@Blog.Id" alt="@Blog?.Title" width="700" height="700"/>
+                <img src="http://localhost:5149/api/Blog/Image/@Blog.Id" alt="@Blog?.Title" width="720" height="700"/>
             </div>
             <hr style="color: #fff;">
             <div class="blog-actions">
@@ -42,10 +42,13 @@
                 <button @onclick="OpenComments" class="comment-button">
                     <img src="Assets/IMG/comment-icon.svg" alt="Comment" />
                 </button>
+                <button class="favorites-button">
+                    <img src="Assets/IMG/favorites-icon.svg" alt="Favorites" />
+                </button>
             </div>
                 <hr style="color: #fff;">
         </div>
-        <div class="blog-right-side">
+        <div class="blog-right-side get-blog-right-side">
             <div class="blog-list right-side-list" id="blog-list">
                 @if (blogs != null)
                 {
@@ -226,7 +229,14 @@
             Blog.LikesCount = likeCount;
 
             LikeIcon = (LikeIcon == "Assets/IMG/like-icon-gray.svg") ? "Assets/IMG/like-icon-red.svg" : "Assets/IMG/like-icon-gray.svg";
-            
+            var notification = new Notification
+            {
+                UserId = UserId,
+                Message = $"User {UserId} liked your blog",
+                Type = "Like"
+            };
+
+            await CreateNotification(notification);
             StateHasChanged();
         }
         else
@@ -235,7 +245,21 @@
         }
     }
 
+    private async Task CreateNotification(Notification notification)
+    {
+        await SetAuthorizationHeader();
+        var response = await HttpClient.PostAsJsonAsync("http://localhost:5205/api/Notifications/CreateNotification", notification);
 
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("Notification created successfully.");
+        }
+        else
+        {
+            Console.Error.WriteLine("Failed to create notification.");
+        }
+    }
+    
     private async Task OpenComments()
     {
         NavigationManager.NavigateTo($"/blog/comments/{BlogId}");

@@ -149,11 +149,10 @@
 }
 
 .blog-item img {
-    width: 100px;
-    height: 100px;
+    width: 160px;
+    height: 130px;
     object-fit: cover;
     border-radius: 5px;
-    margin-right: 20px;
 }
 
 .blog-item .content {
@@ -366,14 +365,19 @@
 }
 
 .blog-right-side {
-    width: 400px;
+    width: 315px;
     color: white;
     padding: 20px;
     margin-top: -85px;
 }
 
+.get-blog-right-side {
+    width: 568px;
+    margin-top: -15px;
+}
+
 .right-side-list {
-    width: 400px;
+    width: 568px;
 }
 
 

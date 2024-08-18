@@ -1,4 +1,4 @@
-@page "/Notifications"
+@page "/Profile"
 @using BlogFrontend.Models
 @using BlogFrontend.Providers
 @using BlogFrontend.Services
@@ -13,33 +13,34 @@
 
 <div class="blog-page" style="color: #fff;">
     <Header OnSearchCompleted="HandleSearchCompleted" />
-
+    <div class="menu" id="menu" data-first-topic-id="@firstTopicId">
+        <div class="menu-content menu-items dragscroll">
+            <a class="menu-item">Public</a>
+            <a class="menu-item">About me</a>
+        </div>
+    </div>
     <div class="notifications-container">
-        <div class="notifications-left">
-            <h2>Notifications</h2>
-            <hr style="color: #93939a;">
-            <div class="notifications-list">
-                @if (notifications != null && notifications.Any())
+        <div class="blog-list" id="blog-list">
+            @if (blogs != null)
+            {
+                @foreach (var blog in blogs)
                 {
-                    foreach (var notification in notifications)
-                    {
-                        <div class="notification-item">
-                            <img src="path_to_avatar_image" class="notification-avatar" alt="Avatar" />
-                            <div class="notification-details">
-                                <span class="notification-user">@notification.Type</span>
-                                <span class="notification-action">@notification.Message</span>
-                                <span class="notification-time">@notification.CreatedAt.ToLocalTime()</span>
+                    <a href="blog/@blog.Id" class="blog-link">
+                        <div class="blog-item">
+                            <div class="content">
+                                <div class="author">@blog.UserName</div>
+                                <div class="title">@blog.Title</div>
+                                <div class="date">@blog.CreationDate.ToShortDateString()</div>
                             </div>
-                            <button class="notification-follow-btn">Follow</button>
+                            <img class="blog-img" src="http://localhost:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
                         </div>
-                        <hr style="color: #93939a;">
-                    }
+                    </a>
                 }
-                else
-                {
-                    <p>No notifications found.</p>
-                }
-            </div>
+            }
+            else
+            {
+                <p>No blogs available for the topic: <span style="color: #9BD21C;">@selectedTopicName</span></p>
+            }
         </div>
         <div class="notifications-right">
             <div class="user-profile-card">
@@ -58,7 +59,9 @@
 @code {
     private Guid UserId { get; set; }
     private List<Notification> notifications = new();
-
+    private int? firstTopicId;
+    private List<BlogDto> blogs = new();
+    private string selectedTopicName;
     protected override async Task OnInitializedAsync()
     {
         var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
@@ -66,25 +69,10 @@
         if (Guid.TryParse(userIdString, out var parsedUserId))
         {
             UserId = parsedUserId;
-            await LoadNotifications();
         }
         else
         {
             Console.Error.WriteLine("Invalid User ID format.");
-        }
-    }
-
-    private async Task LoadNotifications()
-    {
-        await SetAuthorizationHeader();
-        
-        try
-        {
-            notifications = await HttpClient.GetFromJsonAsync<List<Notification>>($"http://localhost:5205/api/Notifications/{UserId}");
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Failed to load notifications: {ex.Message}");
         }
     }
 
