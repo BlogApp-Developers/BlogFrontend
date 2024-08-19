@@ -34,14 +34,14 @@ namespace BlogFrontend.Services
         public async Task<IEnumerable<Topic>> GetTopicsAsync()
         {
             await SetAuthorizationHeader();
-            return await _httpClient.GetFromJsonAsync<IEnumerable<Topic>>("http://localhost:5149/api/Topic/GetAllTopics");
+            return await _httpClient.GetFromJsonAsync<IEnumerable<Topic>>("http://20.93.118.201:5149/api/Topic/GetAllTopics");
         }
 
         public async Task<bool> CreatePreferencesAsync(Guid userId, List<int> selectedTopics)
         {
             await SetAuthorizationHeader();
             Console.WriteLine(userId);
-            var response = await _httpClient.PostAsJsonAsync($"http://localhost:5149/api/Topic/AssignTopicsToUser/{userId}", selectedTopics);
+            var response = await _httpClient.PostAsJsonAsync($"http://20.93.118.201:5149/api/Topic/AssignTopicsToUser/{userId}", selectedTopics);
             return response.IsSuccessStatusCode;
         }
     }

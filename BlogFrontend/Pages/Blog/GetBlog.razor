@@ -5,6 +5,7 @@
 @using BlogFrontend.Services
 @using System.Net.Http.Headers
 @using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
 @inject TopicService TopicService
 @inject BlogService BlogService
 @inject HttpClient HttpClient
@@ -31,7 +32,7 @@
                 }
             </div>
             <div class="blog-image">
-                <img src="http://localhost:5149/api/Blog/Image/@Blog.Id" alt="@Blog?.Title" width="720" height="700"/>
+                <img src="http://20.93.118.201:5149/api/Blog/Image/@Blog.Id" alt="@Blog?.Title" width="720" height="700"/>
             </div>
             <hr style="color: #fff;">
             <div class="blog-actions">
@@ -61,7 +62,7 @@
                                     <div class="title">@blog.Title</div>
                                     <div class="date">@blog.CreationDate.ToShortDateString()</div>
                                 </div>
-                                <img class="blog-img" src="http://localhost:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
+                                <img class="blog-img" src="http://20.93.118.201:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
                             </div>
                         </a>
                     }
@@ -88,6 +89,7 @@
     private int? selectedTopicId;
     private string LikeIcon { get; set; } = "Assets/IMG/like-icon-gray.svg";
     private string selectedTopicName;
+    private string userName;
 
     protected override async Task OnInitializedAsync()
     {
@@ -104,6 +106,15 @@
     
         await LoadBlogDetails();
         StateHasChanged();
+
+        var token = await LocalStorageService.GetItemAsync<string>("jwt");
+            if (!string.IsNullOrEmpty(token))
+            {
+                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
+                
+                userName = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            }
     }
 
     protected override async Task OnParametersSetAsync()
@@ -134,7 +145,7 @@
     {
         await SetAuthorizationHeader();
 
-        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Likes/GetLikesForBlog/{BlogId}");
+        var response = await HttpClient.GetAsync($"http://20.93.118.201:5149/api/Likes/GetLikesForBlog/{BlogId}");
         
         if (response.IsSuccessStatusCode)
         {
@@ -149,7 +160,7 @@
     {
         await SetAuthorizationHeader();
 
-        Blog = await HttpClient.GetFromJsonAsync<BlogDto>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
+        Blog = await HttpClient.GetFromJsonAsync<BlogDto>($"http://20.93.118.201:5149/api/Blog/GetBlogById/{BlogId}");
             StateHasChanged();
         if (Blog == null)
         {
@@ -167,7 +178,7 @@
     {
         await SetAuthorizationHeader();
 
-        var response = await HttpClient.GetAsync($"api/Blog/SearchBlogsByTitle?title={Uri.EscapeDataString(query)}");
+        var response = await HttpClient.GetAsync($"http://20.93.118.201:5149/api/Blog/SearchBlogsByTitle?title={Uri.EscapeDataString(query)}");
 
         if (response.IsSuccessStatusCode)
         {
@@ -180,7 +191,7 @@
         selectedTopicName = topicInfo.topicName;
         await SetAuthorizationHeader();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://20.93.118.201:5149/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
 
         var response = await HttpClient.SendAsync(request);
         if (response.IsSuccessStatusCode)
@@ -199,7 +210,7 @@
 {
     await SetAuthorizationHeader();
 
-    var response = await HttpClient.GetAsync($"http://localhost:5149/api/Likes/IsLiked?blogId={BlogId}&userId={UserId}");
+    var response = await HttpClient.GetAsync($"http://20.93.118.201:5149/api/Likes/IsLiked?blogId={BlogId}&userId={UserId}");
 
     if (response.IsSuccessStatusCode)
     {
@@ -222,7 +233,7 @@
 
         string endpoint = await CheckIfLiked() ? "UnlikeBlog" : "LikeBlog";
 
-        var response = await HttpClient.PostAsJsonAsync($"http://localhost:5149/api/Likes/{endpoint}", likeRequest);
+        var response = await HttpClient.PostAsJsonAsync($"http://20.93.118.201:5149/api/Likes/{endpoint}", likeRequest);
 
         if (response.IsSuccessStatusCode)
         {
@@ -236,7 +247,7 @@
                 var notification = new Notification
                 {
                     UserId = Blog.UserId,
-                    Message = $"User {UserId} liked your blog",
+                    Message = $"liked your blog.",
                     Type = "Like"
                 };
                 await CreateNotification(notification);

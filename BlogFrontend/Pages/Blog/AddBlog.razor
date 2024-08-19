@@ -34,7 +34,7 @@
                                     <div class="title">@blog.Title</div>
                                     <div class="date">@blog.CreationDate.ToShortDateString()</div>
                                 </div>
-                                <img class="blog-img" src="http://localhost:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
+                                <img class="blog-img" src="http://20.93.118.201:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
                             </div>
                         </a>
                     }
@@ -105,7 +105,7 @@
     {
         await SetAuthorizationHeader();
 
-        Blog = await HttpClient.GetFromJsonAsync<BlogDto>($"http://localhost:5149/api/Blog/GetBlogById/{BlogId}");
+        Blog = await HttpClient.GetFromJsonAsync<BlogDto>($"http://20.93.118.201:5149/api/Blog/GetBlogById/{BlogId}");
             StateHasChanged();
         if (Blog == null)
         {
@@ -118,7 +118,7 @@
         selectedTopicName = topicInfo.topicName;
         await SetAuthorizationHeader();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5149/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://20.93.118.201:5149/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
 
         var response = await HttpClient.SendAsync(request);
         if (response.IsSuccessStatusCode)

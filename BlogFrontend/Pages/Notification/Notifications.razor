@@ -6,6 +6,7 @@
 @using Blazored.LocalStorage
 @using System.Net.Http.Headers
 @using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
 @inject HttpClient HttpClient
 @inject ILocalStorageService LocalStorage
 @inject JwtAuthenticationStateProvider AuthStateProvider
@@ -27,8 +28,8 @@
                         <div class="notification-item">
                             <img src="Assets/IMG/DefaultAvatar.png" class="notification-avatar" alt="Avatar" />
                             <div class="notification-details">
-                                <span>@userName</span>
-                                <span class="notification-user">@notification.Type</span>
+                                <span class="notification-user">@userName</span>
+                                @* <span class="notification-type">@notification.Type</span> *@
                                 <span class="notification-action">@notification.Message</span>
                                 <span class="notification-time">@notification.CreatedAt.ToShortDateString()</span>
                             </div>
@@ -76,13 +77,14 @@
             Console.Error.WriteLine("Invalid User ID format.");
         }
 
-        var token = await LocalStorageService.GetItemAsync<string>("jwt");
-        if (!string.IsNullOrEmpty(token))
-        {
-            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(token);
-            userName = jwtToken.Claims.FirstOrDefault(c => c.Type == "UserName")?.Value;
-        }
+            var token = await LocalStorageService.GetItemAsync<string>("jwt");
+            if (!string.IsNullOrEmpty(token))
+            {
+                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
+                
+                userName = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            }
     }
 
     private async Task LoadNotifications()

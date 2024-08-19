@@ -67,7 +67,7 @@
     {
         await SetAuthorizationHeader();
 
-        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/SearchBlogsByTitle/{Uri.EscapeDataString(SearchQuery)}");
+        var response = await HttpClient.GetAsync($"http://20.93.118.201:5149/api/Blog/SearchBlogsByTitle/{Uri.EscapeDataString(SearchQuery)}");
         var data = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
 
         if (data != null && OnSearchCompleted.HasDelegate)
