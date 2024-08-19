@@ -6,6 +6,7 @@
 @using Blazored.LocalStorage
 @using System.Net.Http.Headers
 @using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
 @inject TopicService TopicService
 @inject BlogService BlogService
 @inject HttpClient HttpClient
@@ -30,7 +31,10 @@
                         <a href="blog/@blog.Id" class="blog-link">
                             <div class="blog-item">
                                 <div class="content">
-                                    <div class="author">@blog.UserName</div>
+                                    <div class="author">
+                                        <img src="@AvatarUrl" alt="Avatar" style="width: 30px; height: 30px; border-radius: 100px; margin-right: 12px;">
+                                        @blog.UserName
+                                    </div>
                                     <div class="title">@blog.Title</div>
                                     <div class="date">@blog.CreationDate.ToShortDateString()</div>
                                 </div>
@@ -59,6 +63,7 @@
     private List<BlogDto> blogs = new();
     private int? selectedTopicId;
     private string selectedTopicName;
+    private string AvatarUrl;
 
     protected override async Task OnInitializedAsync()
     {
@@ -71,6 +76,15 @@
         else
         {
             Console.Error.WriteLine("Invalid User ID format.");
+        }
+
+        var token = await LocalStorageService.GetItemAsync<string>("jwt");
+        if (!string.IsNullOrEmpty(token))
+        {
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            
+            AvatarUrl = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
         }
     
         await LoadBlogDetails();

@@ -58,7 +58,10 @@
                         <a href="blog/@blog.Id" class="blog-link">
                             <div class="blog-item">
                                 <div class="content">
-                                    <div class="author">@blog.UserName</div>
+                                    <div class="author">
+                                        <img src="@AvatarUrl" alt="Avatar" style="width: 30px; height: 30px; border-radius: 100px; margin-right: 12px;">
+                                        @blog.UserName
+                                    </div>
                                     <div class="title">@blog.Title</div>
                                     <div class="date">@blog.CreationDate.ToShortDateString()</div>
                                 </div>
@@ -90,6 +93,7 @@
     private string LikeIcon { get; set; } = "Assets/IMG/like-icon-gray.svg";
     private string selectedTopicName;
     private string userName;
+    private string AvatarUrl;
 
     protected override async Task OnInitializedAsync()
     {
@@ -108,13 +112,14 @@
         StateHasChanged();
 
         var token = await LocalStorageService.GetItemAsync<string>("jwt");
-            if (!string.IsNullOrEmpty(token))
-            {
-                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-                var jwtToken = handler.ReadJwtToken(token);
-                
-                userName = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-            }
+        if (!string.IsNullOrEmpty(token))
+        {
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            
+            userName = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            AvatarUrl = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
+        }
     }
 
     protected override async Task OnParametersSetAsync()
@@ -247,7 +252,7 @@
                 var notification = new Notification
                 {
                     UserId = Blog.UserId,
-                    Message = $"liked your blog.",
+                    Message = $"liked your blog",
                     Type = "Like"
                 };
                 await CreateNotification(notification);

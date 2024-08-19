@@ -3,6 +3,7 @@
 @using BlogFrontend.Providers
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Net.Http.Headers
+@using System.Security.Claims
 @inject NavigationManager NavigationManager
 @inject HttpClient HttpClient
 @inject IJSRuntime JSRuntime
@@ -27,6 +28,7 @@
     private string? userId;
     private bool isDropdownVisible;
     private bool areNotificationsEnabled;
+    private string AvatarUrl;
 
     protected override async Task OnInitializedAsync()
     {
@@ -47,6 +49,15 @@
         else
         {
             areNotificationsEnabled = false;
+        }
+
+        var token = await LocalStorageService.GetItemAsync<string>("jwt");
+        if (!string.IsNullOrEmpty(token))
+        {
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            
+            AvatarUrl = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
         }
     }
 
@@ -166,7 +177,7 @@
         </div>
         <div class="profile">
             <a href="javascript:void(0);" @onclick="ToggleDropdown">
-                <img src="Assets/IMG/DefaultAvatar.png" alt="profile" width="35px" height="35px" style="border-radius: 100px;">
+                <img src="@AvatarUrl" alt="profile" width="35px" height="35px" style="border-radius: 100px;">
             </a>
             <div class="dropdown-menu @(isDropdownVisible ? "show" : "")">
                 <a href="javascript:void(0);" @onclick="Logout">Logout</a>

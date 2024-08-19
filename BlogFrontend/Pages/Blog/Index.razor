@@ -5,6 +5,7 @@
 @using BlogFrontend.Services
 @using Microsoft.AspNetCore.Authorization
 @using System.Net.Http.Headers
+@using System.Security.Claims
 @inject TopicService TopicService
 @inject BlogService BlogService
 @inject NavigationManager Navigation
@@ -25,7 +26,10 @@
                     <a href="blog/@blog.Id" class="blog-link">
                         <div class="blog-item">
                             <div class="content">
-                                <div class="author">@blog.UserName</div>
+                                <div class="author">
+                                    <img src="@AvatarUrl" alt="Avatar" style="width: 30px; height: 30px; border-radius: 100px; margin-right: 12px;">
+                                    @blog.UserName
+                                </div>
                                 <div class="title">@blog.Title</div>
                                 <div class="date">@blog.CreationDate.ToShortDateString()</div>
                             </div>
@@ -83,6 +87,7 @@
     private Guid UserId { get; set; }
     private string selectedTopicName;
     private List<Topic> recommendedTopics = new List<Topic>();
+    private string AvatarUrl;
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,6 +103,15 @@
         }
         await LoadRecommendedTopics();
         var topicList = await TopicService.GetTopicsAsync();
+
+        var token = await LocalStorageService.GetItemAsync<string>("jwt");
+        if (!string.IsNullOrEmpty(token))
+        {
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            
+            AvatarUrl = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
+        }
     }
 
     private void HandleSearchCompleted(List<BlogDto> searchResults)
