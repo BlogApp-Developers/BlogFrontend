@@ -10,45 +10,46 @@
 @inject IJSRuntime JSRuntime
 @inject ILocalStorageService LocalStorageService
 
-<div class="comments-section">
-    <h2>Комментарии</h2>
+<div class="blog-page" style="color: #fff;">
+    <Header OnSearchCompleted="HandleSearchCompleted" />
+    <div class="comments-section">
+        <h2>Сomments</h2>
 
-    @if (comments == null)
-    {
-        <p>Загрузка комментариев...</p>
-    }
-    else if (comments.Count == 0)
-    {
-        <p>Пока нет комментариев.</p>
-    }
-    else
-    {
-        <ul>
-            @foreach (var comment in comments)
-            {
-                <li>
-                    <div class="comment">
-                        <p class="comment-content">@comment.Content</p>
-                        @* <p class="comment-details">от @comment.User.UserName, @comment.CreatedAt.ToString("g")</p> *@
-                    </div>
-                </li>
-            }
-        </ul>
-    }
+        @if (comments == null)
+        {
+            <p>Loading comments...</p>
+        }
+        else if (comments.Count == 0)
+        {
+            <p>No comments yet</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var comment in comments)
+                {
+                    <li>
+                        <div class="comment">
+                            <p class="comment-content">@comment.Content</p>
+                            @* <p class="comment-details">от @comment.User.UserName, @comment.CreatedAt.ToString("g")</p> *@
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
 
-    <div class="add-comment">
-        <textarea @bind="newCommentContent" placeholder="Напишите комментарий..."></textarea>
-        <button @onclick="SubmitComment">Добавить комментарий</button>
+        <div class="add-comment">
+            <textarea @bind="newCommentContent" placeholder="Write a comment..."></textarea>
+            <button @onclick="SubmitComment">Add comment</button>
+        </div>
     </div>
 </div>
 
 @code {
     [Parameter] public Guid BlogId { get; set; }
-
     private List<CommentDto> comments;
     private string newCommentContent;
     private Guid UserId;
-
     protected override async Task OnInitializedAsync()
     {
         var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
@@ -107,7 +108,7 @@
             CreatedAt = DateTime.UtcNow
         };
 
-        var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Comments", comment);
+        var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Comments/CreateComment", comment);
 
         if (response.IsSuccessStatusCode)
         {
@@ -125,8 +126,13 @@
         }
         else
         {
-            Console.Error.WriteLine("Ошибка при добавлении комментария.");
+            Console.Error.WriteLine("Error adding a comment");
         }
+    }
+
+    private void HandleSearchCompleted(List<BlogDto> searchResults)
+    {
+        
     }
 
 }
