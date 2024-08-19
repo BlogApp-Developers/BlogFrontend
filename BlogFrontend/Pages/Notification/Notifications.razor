@@ -95,7 +95,7 @@
         
         try
         {
-            notifications = await HttpClient.GetFromJsonAsync<List<Notification>>($"http://localhost:5205/api/Notification/GetUserNotifications/{UserId}");
+            notifications = await HttpClient.GetFromJsonAsync<List<Notification>>($"http://20.218.137.224/api/Notification/GetUserNotifications/{UserId}");
         }
         catch (Exception ex)
         {

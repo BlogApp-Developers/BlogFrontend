@@ -270,7 +270,7 @@
     private async Task CreateNotification(Notification notification)
     {
         await SetAuthorizationHeader();
-        var response = await HttpClient.PostAsJsonAsync("http://localhost:5205/api/Notification/CreateNotification", notification);
+        var response = await HttpClient.PostAsJsonAsync("http://20.218.137.224/api/Notification/CreateNotification", notification);
 
         if (response.IsSuccessStatusCode)
         {
