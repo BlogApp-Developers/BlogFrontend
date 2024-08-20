@@ -95,7 +95,7 @@
 
     private async Task LoadComments()
     {
-        comments = await HttpClient.GetFromJsonAsync<List<CommentDto>>($"http://20.93.118.201:5149/api/Comments/blog/{BlogId}");
+        comments = await HttpClient.GetFromJsonAsync<List<CommentDto>>($"http://20.93.118.201/api/Comments/blog/{BlogId}");
     }
 
     private async Task SubmitComment()
@@ -108,7 +108,7 @@
             CreatedAt = DateTime.UtcNow
         };
 
-        var response = await HttpClient.PostAsJsonAsync("http://20.93.118.201:5149/api/Comments/CreateComment", comment);
+        var response = await HttpClient.PostAsJsonAsync("http://20.93.118.201/api/Comments/CreateComment", comment);
 
         if (response.IsSuccessStatusCode)
         {

@@ -32,7 +32,7 @@
                 }
             </div>
             <div class="blog-image">
-                <img src="http://20.93.118.201:5149/api/Blog/Image/@Blog.Id" alt="@Blog?.Title" width="720" height="700"/>
+                <img src="http://20.93.118.201/api/Blog/Image/@Blog.Id" alt="@Blog?.Title" width="720" height="700"/>
             </div>
             <hr style="color: #fff;">
             <div class="blog-actions">
@@ -65,7 +65,7 @@
                                     <div class="title">@blog.Title</div>
                                     <div class="date">@blog.CreationDate.ToShortDateString()</div>
                                 </div>
-                                <img class="blog-img" src="http://20.93.118.201:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
+                                <img class="blog-img" src="http://20.93.118.201/api/Blog/Image/@blog.Id" alt="@blog.Title">
                             </div>
                         </a>
                     }
@@ -150,7 +150,7 @@
     {
         await SetAuthorizationHeader();
 
-        var response = await HttpClient.GetAsync($"http://20.93.118.201:5149/api/Likes/GetLikesForBlog/{BlogId}");
+        var response = await HttpClient.GetAsync($"http://20.93.118.201/api/Likes/GetLikesForBlog/{BlogId}");
         
         if (response.IsSuccessStatusCode)
         {
@@ -165,7 +165,7 @@
     {
         await SetAuthorizationHeader();
 
-        Blog = await HttpClient.GetFromJsonAsync<BlogDto>($"http://20.93.118.201:5149/api/Blog/GetBlogById/{BlogId}");
+        Blog = await HttpClient.GetFromJsonAsync<BlogDto>($"http://20.93.118.201/api/Blog/GetBlogById/{BlogId}");
             StateHasChanged();
         if (Blog == null)
         {
@@ -183,7 +183,7 @@
     {
         await SetAuthorizationHeader();
 
-        var response = await HttpClient.GetAsync($"http://20.93.118.201:5149/api/Blog/SearchBlogsByTitle?title={Uri.EscapeDataString(query)}");
+        var response = await HttpClient.GetAsync($"http://20.93.118.201/api/Blog/SearchBlogsByTitle?title={Uri.EscapeDataString(query)}");
 
         if (response.IsSuccessStatusCode)
         {
@@ -196,7 +196,7 @@
         selectedTopicName = topicInfo.topicName;
         await SetAuthorizationHeader();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, $"http://20.93.118.201:5149/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://20.93.118.201/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
 
         var response = await HttpClient.SendAsync(request);
         if (response.IsSuccessStatusCode)
@@ -215,7 +215,7 @@
 {
     await SetAuthorizationHeader();
 
-    var response = await HttpClient.GetAsync($"http://20.93.118.201:5149/api/Likes/IsLiked?blogId={BlogId}&userId={UserId}");
+    var response = await HttpClient.GetAsync($"http://20.93.118.201/api/Likes/IsLiked?blogId={BlogId}&userId={UserId}");
 
     if (response.IsSuccessStatusCode)
     {
@@ -238,7 +238,7 @@
 
         string endpoint = await CheckIfLiked() ? "UnlikeBlog" : "LikeBlog";
 
-        var response = await HttpClient.PostAsJsonAsync($"http://20.93.118.201:5149/api/Likes/{endpoint}", likeRequest);
+        var response = await HttpClient.PostAsJsonAsync($"http://20.93.118.201/api/Likes/{endpoint}", likeRequest);
 
         if (response.IsSuccessStatusCode)
         {
