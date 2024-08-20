@@ -33,7 +33,7 @@
                                 <div class="title">@blog.Title</div>
                                 <div class="date">@blog.CreationDate.ToShortDateString()</div>
                             </div>
-                            <img class="blog-img" src="http://20.93.118.201/api/Blog/Image/@blog.Id" alt="@blog.Title">
+                            <img class="blog-img" src="http://20.93.118.201:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
                         </div>
                     </a>
                 }
@@ -138,7 +138,7 @@
         selectedTopicName = topicInfo.topicName;
         await SetAuthorizationHeader();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, $"http://20.93.118.201/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://20.93.118.201:5149/api/Blog/GetBlogsByTopic/{topicInfo.topicId}");
 
         var response = await HttpClient.SendAsync(request);
         if (response.IsSuccessStatusCode)
@@ -156,7 +156,7 @@
     private async Task LoadRecommendedTopics()
     {
         await SetAuthorizationHeader();
-        var response = await HttpClient.GetAsync($"http://20.93.118.201/api/Topic/RecommendedTopics/{UserId}");
+        var response = await HttpClient.GetAsync($"http://20.93.118.201:5149/api/Topic/RecommendedTopics/{UserId}");
         if (response.IsSuccessStatusCode)
         {
             recommendedTopics = await response.Content.ReadFromJsonAsync<List<Topic>>() ?? new List<Topic>();
@@ -166,7 +166,7 @@
     private async Task AddTopicToUser(int topicId)
     {
         await SetAuthorizationHeader();
-        var response = await HttpClient.PostAsync($"http://20.93.118.201/api/Topic/AddTopicToUser/{UserId}/{topicId}", null);
+        var response = await HttpClient.PostAsync($"http://20.93.118.201:5149/api/Topic/AddTopicToUser/{UserId}/{topicId}", null);
         if (response.IsSuccessStatusCode)
         {
             await LoadRecommendedTopics();

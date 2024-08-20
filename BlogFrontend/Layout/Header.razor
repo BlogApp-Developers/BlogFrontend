@@ -132,7 +132,7 @@
                 HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
 
-            var response = await HttpClient.PutAsJsonAsync("http://20.218.137.224/api/Notification/ChangeEmailSend", value);
+            var response = await HttpClient.PutAsJsonAsync("http://20.79.187.18/api/Notification/ChangeEmailSend", value);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)

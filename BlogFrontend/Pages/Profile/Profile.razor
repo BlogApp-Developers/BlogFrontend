@@ -36,7 +36,7 @@
                                 <div class="title">@blog.Title</div>
                                 <div class="date">@blog.CreationDate.ToShortDateString()</div>
                             </div>
-                            <img class="blog-img" src="http://20.93.118.201/api/Blog/Image/@blog.Id" alt="@blog.Title">
+                            <img class="blog-img" src="http://20.93.118.201:5149/api/Blog/Image/@blog.Id" alt="@blog.Title">
                         </div>
                     </a>
                 }
@@ -99,7 +99,7 @@
         {
             await SetAuthorizationHeader();
 
-            var response = await HttpClient.GetAsync($"http://20.93.118.201/api/Blog/GetBlogByUserId/{UserId}");
+            var response = await HttpClient.GetAsync($"http://20.93.118.201:5149/api/Blog/GetBlogByUserId/{UserId}");
 
             if (response.IsSuccessStatusCode)
             {

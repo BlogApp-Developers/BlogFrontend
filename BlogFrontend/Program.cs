@@ -18,7 +18,7 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<JwtAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<JwtAuthenticationStateProvider>());
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://20.218.120.150") });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://20.79.185.227") });
 builder.Services.AddScoped<TopicService>();
 builder.Services.AddScoped<BlogService>();
 
@@ -29,8 +29,8 @@ builder.Services.AddSingleton(new JsonSerializerOptions
 
 builder.Services.AddHttpClient("IdentityService", httpClient =>
 {
-    httpClient.BaseAddress = new Uri("http://20.218.120.150");
-    httpClient.BaseAddress = new Uri("http://20.93.118.201");
+    httpClient.BaseAddress = new Uri("http://20.79.185.227");
+    httpClient.BaseAddress = new Uri("http://20.93.118.201:5149");
 });
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 builder.Services.AddBlazoredLocalStorage();

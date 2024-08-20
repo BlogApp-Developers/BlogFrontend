@@ -34,7 +34,7 @@ namespace BlogFrontend.Services
         public async Task<List<Blog>> GetBlogsByTopicAsync(int topicId)
         {
             await SetAuthorizationHeader();
-            return await _httpClient.GetFromJsonAsync<List<Blog>>($"http://20.93.118.201/api/Blog/GetBlogsByTopic/{topicId}");
+            return await _httpClient.GetFromJsonAsync<List<Blog>>($"http://20.93.118.201:5149/api/Blog/GetBlogsByTopic/{topicId}");
         }
     }
 }
