@@ -28,8 +28,7 @@
                         <div class="notification-item">
                             <img src="@AvatarUrl" class="notification-avatar" alt="Avatar" />
                             <div class="notification-details">
-                                <span class="notification-user">@userName</span>
-                                @* <span class="notification-type">@notification.Type</span> *@
+                                <span class="notification-user">@notification.UserName</span>
                                 <span class="notification-action">@notification.Message</span>
                                 <span class="notification-time">@notification.CreatedAt.ToShortDateString()</span>
                             </div>
@@ -48,10 +47,10 @@
             <div class="user-profile-card">
                 <img src="@AvatarUrl" class="user-profile-avatar" alt="Profile Avatar" />
                 <h3>@userName</h3>
-                <p>Graphic and UI/UX designer</p>
+                @* <p>Graphic and UI/UX designer</p> *@
                 <div class="user-profile-stats">
-                    <span>275 followers</span>
-                    <span>345 following</span>
+                    @* <span>275 followers</span>
+                    <span>345 following</span> *@
                 </div>
             </div>
         </div>
@@ -95,7 +94,7 @@
         
         try
         {
-            notifications = await HttpClient.GetFromJsonAsync<List<Notification>>($"http://20.79.187.18/api/Notification/GetUserNotifications/{UserId}");
+            notifications = await HttpClient.GetFromJsonAsync<List<Notification>>($"http://20.218.162.5/api/Notification/GetUserNotifications/{UserId}");
         }
         catch (Exception ex)
         {

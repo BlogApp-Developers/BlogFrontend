@@ -83,7 +83,7 @@
         {
             await SetAuthorizationHeader();
 
-            var response = await HttpClient.GetAsync($"http://20.93.118.201:5149/api/Topic/GetUserTopics/{userId}");
+            var response = await HttpClient.GetAsync($"http://135.236.156.195/api/Topic/GetUserTopics/{userId}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
