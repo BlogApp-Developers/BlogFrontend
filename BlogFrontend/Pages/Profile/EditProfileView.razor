@@ -1,5 +1,7 @@
 @using BlogFrontend.Models
-
+@using static System.Net.WebRequestMethods
+@inject NavigationManager Navigation
+@inject HttpClient HttpClient
 <div class="profile-edit-container">
     <h2>Edit Profile</h2>
     
@@ -13,7 +15,7 @@
             </div>
         </div>
         <div class="name-section">
-            <input type="text" id="userName" placeholder="Username" @bind="userName" class="input-field" />
+            <input type="text" id="userName" placeholder="Username" @bind="user.UserName" class="input-field" />
         </div>
     </div>
     
@@ -55,8 +57,35 @@
 
     private async Task SaveChanges()
     {
-        
+        try
+        {
+            var updatedUser = new UserDto
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                Email = user.Email,
+                AboutMe = user.AboutMe,
+                AvatarUrl = ImagePreviewUrl
+            };
+
+            var response = await HttpClient.PutAsJsonAsync("http://localhost:5259/api/Settings/EditProfile", updatedUser);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Profile updated successfully.");
+                Navigation.NavigateTo("/Profile");
+            }
+            else
+            {
+                Console.WriteLine("Failed to update profile: " + await response.Content.ReadAsStringAsync());
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred while saving changes: {ex.Message}");
+        }
     }
+
 }
 
 <style>
