@@ -21,13 +21,10 @@
 
     [Parameter]
     public EventCallback<List<BlogDto>> OnSearchCompleted { get; set; }
-
     private List<Topic> Topics { get; set; } = new List<Topic>();
     private BlogFormModel BlogForm { get; set; } = new BlogFormModel();
     private string SearchQuery { get; set; }
     private string? userId;
-    private bool isDropdownVisible;
-    private bool areNotificationsEnabled;
     private string AvatarUrl;
 
     protected override async Task OnInitializedAsync()
@@ -41,16 +38,6 @@
             userId = null;
         }
 
-        var storedValue = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "areNotificationsEnabled");
-        if (!string.IsNullOrEmpty(storedValue))
-        {
-            areNotificationsEnabled = bool.Parse(storedValue);
-        }
-        else
-        {
-            areNotificationsEnabled = false;
-        }
-
         var token = await LocalStorageService.GetItemAsync<string>("jwt");
         if (!string.IsNullOrEmpty(token))
         {
@@ -60,25 +47,11 @@
             AvatarUrl = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
         }
     }
-
-    private void ToggleDropdown()
-    {
-        isDropdownVisible = !isDropdownVisible;
-    }
-    private async Task Logout()
-    {
-        await LocalStorageService.RemoveItemAsync("jwt");
-        await LocalStorageService.RemoveItemAsync("refresh");
-        await LocalStorageService.RemoveItemAsync("userId");
-
-        NavigationManager.NavigateTo("/");
-    }
-
     private async Task SearchBlogs()
     {
         await SetAuthorizationHeader();
 
-        var response = await HttpClient.GetAsync($"http://135.236.156.195/api/Blog/SearchBlogsByTitle/{Uri.EscapeDataString(SearchQuery)}");
+        var response = await HttpClient.GetAsync($"http://localhost:5149/api/Blog/SearchBlogsByTitle/{Uri.EscapeDataString(SearchQuery)}");
         var data = await response.Content.ReadFromJsonAsync<List<BlogDto>>();
 
         if (data != null && OnSearchCompleted.HasDelegate)
@@ -101,44 +74,6 @@
             token = token.Trim('"');
             HttpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", token);
-        }
-    }
-
-    private async Task OnAreNotificationsEnabledChanged(ChangeEventArgs e)
-    {
-        areNotificationsEnabled = (bool)e.Value;
-        
-        await JSRuntime.InvokeVoidAsync("localStorage.setItem", "areNotificationsEnabled", areNotificationsEnabled.ToString());
-        
-        var success = await SendNotificationSettingChange(areNotificationsEnabled);
-        if (success)
-        {
-            Console.WriteLine("Notification setting updated successfully.");
-        }
-        else
-        {
-            Console.Error.WriteLine("Failed to update notification setting.");
-        }
-    }
-
-    private async Task<bool> SendNotificationSettingChange(bool value)
-    {
-        try
-        {
-            var token = await LocalStorageService.GetItemAsync<string>("jwt");
-            if (!string.IsNullOrEmpty(token))
-            {
-                token = token.Trim('"');
-                HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
-
-            var response = await HttpClient.PutAsJsonAsync("http://20.218.162.5/api/Notification/ChangeEmailSend", value);
-            return response.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error sending request: {ex.Message}");
-            return false;
         }
     }
 }
@@ -174,124 +109,10 @@
             <a href="/Blogs">
                 <img src="Assets/IMG/Export.png" alt="">
             </a>
-        </div>
-        <div class="profile">
-            <a href="javascript:void(0);" @onclick="ToggleDropdown">
+            <a href="/Profile">
                 <img src="@AvatarUrl" alt="profile" width="35px" height="35px" style="border-radius: 100px;">
             </a>
-            <div class="dropdown-menu @(isDropdownVisible ? "show" : "")">
-                <a href="javascript:void(0);" @onclick="Logout">
-                    <img src="Assets/IMG/logout-32.png" alt="" style="margin-right: 5px;">
-                    Logout
-                </a>
-                <a href="/Profile">
-                    <img src="Assets/IMG/profile.png" alt="" style="width: 50px;">
-                    Profile
-                </a>
-                <div class="dropdown-divider"></div>
-                <label class="switch">
-                    <input type="checkbox" @onchange="OnAreNotificationsEnabledChanged" checked="@areNotificationsEnabled" />
-                    <span class="slider round"></span>
-                </label>
-                <span>Enable Notifications</span>
-            </div>
         </div>
     </div>
 </div>
 
-<style>
-.profile {
-    position: relative;
-    display: inline-block;
-}
-
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background-color: #000;
-    color: #fff;
-    border: 1px solid #434343;
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-    z-index: 1;
-}
-
-.dropdown-menu.show {
-    display: block;
-    width: max-content;
-    text-align: center;
-    border-radius: 10px;
-    padding: 10px;
-}
-
-.dropdown-menu a {
-    display: block;
-    padding: 8px 16px;
-    color: #fff;
-    text-decoration: none;
-    transition: all 0.3s;
-    border-radius: 10px;
-}
-
-.dropdown-menu>span {
-    margin: 0 15px 0 0;
-}
-
-.dropdown-menu a:hover {
-    background-color: #9BD21C;
-}
-
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 60px;
-  height: 34px;
-  margin: 0 0 0 15px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
-  border-radius: 34px;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 26px;
-  width: 26px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: #9BD21C;
-}
-
-input:checked + .slider:before {
-  transform: translateX(26px);
-}
-
-.dropdown-divider {
-  height: 1px;
-  margin: 0.5rem 0;
-  overflow: hidden;
-  background-color: #e9ecef;
-}
-</style>

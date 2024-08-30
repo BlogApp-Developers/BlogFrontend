@@ -12,4 +12,6 @@ public class UserDto
     public string Email { get; set; }    
     public string AvatarUrl { get; set; }
     public string AboutMe { get; set; }  
+    public ICollection<Follow>? Followers { get; set; }
+
 }

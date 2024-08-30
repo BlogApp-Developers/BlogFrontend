@@ -77,7 +77,7 @@
     {
         await SetAuthorizationHeader();
 
-        var response = await HttpClient.GetAsync("http://135.236.156.195/api/Topic/GetAllTopics");
+        var response = await HttpClient.GetAsync("http://localhost:5149/api/Topic/GetAllTopics");
         if (response.IsSuccessStatusCode)
         {
             Topics = await response.Content.ReadFromJsonAsync<List<Topic>>();
@@ -121,7 +121,7 @@
         formData.Add(new StringContent(BlogForm.TopicId.ToString()), "topicId");
         formData.Add(new StringContent(userId ?? string.Empty), "userId");
 
-        var response = await HttpClient.PostAsync("http://135.236.156.195/api/Blog/CreateBlog", formData);
+        var response = await HttpClient.PostAsync("http://localhost:5149/api/Blog/CreateBlog", formData);
         var responseContent = await response.Content.ReadAsStringAsync();
         NavigationManager.NavigateTo($"/Blogs");
     }   

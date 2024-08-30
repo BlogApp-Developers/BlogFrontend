@@ -1,0 +1,158 @@
+@using BlogFrontend.Models
+
+<div class="profile-edit-container">
+    <h2>Edit Profile</h2>
+    
+    <div class="edit-section">
+        <div class="avatar-section">
+            <div class="avatar-container">
+                <label>
+                    <img src="@ImagePreviewUrl" id="avatar-preview" alt="Avatar Preview" style="max-width: 200px; max-height: 200px;" />
+                    <InputFile OnChange="OnInputFileChange" accept="image/*" style="display: none;" />
+                </label>
+            </div>
+        </div>
+        <div class="name-section">
+            <input type="text" id="userName" placeholder="Username" @bind="userName" class="input-field" />
+        </div>
+    </div>
+    
+    <div class="edit-section">
+        <label for="aboutMe">Change About Me:</label>
+        <textarea id="aboutMe" @bind="user.AboutMe" class="textarea-field"></textarea>
+    </div>
+    
+    <button @onclick="SaveChanges" class="save-button">Save Changes</button>
+</div>
+
+@code {
+    [Parameter] public string AvatarUrl { get; set; }
+    [Parameter] public string userName { get; set; }
+    [Parameter] public UserDto user { get; set; }
+    private IBrowserFile? selectedImage;
+    private string ImagePreviewUrl;
+
+    protected override void OnInitialized()
+    {
+        ImagePreviewUrl = AvatarUrl;
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        if (e.File != null)
+        {
+            selectedImage = e.File;
+
+            var buffer = new byte[selectedImage.Size];
+            await selectedImage.OpenReadStream().ReadAsync(buffer);
+            ImagePreviewUrl = $"data:{selectedImage.ContentType};base64,{Convert.ToBase64String(buffer)}";
+        }
+        else
+        {
+            Console.WriteLine("No file selected");
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        
+    }
+}
+
+<style>
+.profile-edit-container {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #2c2f33;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    color: #fff;
+}
+
+h2 {
+    text-align: center;
+    color: #9BD21C;
+    margin-bottom: 20px;
+}
+
+.edit-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.edit-section:nth-last-child(2) {
+    display: block;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.input-field,
+.textarea-field {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #23272a;
+    color: #fff;
+}
+
+.input-field {
+    width: 285px;
+}
+
+.textarea-field {
+    min-height: 100px;
+    max-width: 400px;
+    max-height: 370px;
+}
+
+.avatar-container {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.avatar-container label {
+    cursor: pointer;
+}
+
+#avatar-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-right: 15px;
+    object-fit: cover;
+    border: 2px solid #9BD21C;
+    transition: filter 0.3s ease;
+}
+
+#avatar-preview:hover {
+    filter: brightness(0.6);
+}
+
+#avatar {
+    cursor: pointer;
+}
+
+.save-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #9BD21C;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.save-button:hover {
+    background-color: #7fa91a;
+}
+</style>

@@ -1,0 +1,17 @@
+@using BlogFrontend.Models
+
+<div class="user-profile-card">
+    <img src="@AvatarUrl" class="user-profile-avatar" alt="Profile Avatar" />
+    <h3>@userName</h3>
+    <p>@(string.IsNullOrWhiteSpace(user.AboutMe) ? "Hello! I use the best Blog!" : user.AboutMe)</p>
+    <div class="user-profile-stats">
+        <span>275 followers</span>
+        <span>345 following</span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string AvatarUrl { get; set; }
+    [Parameter] public string userName { get; set; }
+    [Parameter] public UserDto user { get; set; }
+}

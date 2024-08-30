@@ -62,7 +62,7 @@
     {
         try
         {
-            var response = await HttpClient.PostAsJsonAsync("http://20.218.163.172/api/Identity/Login", login);
+            var response = await HttpClient.PostAsJsonAsync("http://localhost:5259/api/Identity/Login", login);
 
             if (response.IsSuccessStatusCode)
             {
