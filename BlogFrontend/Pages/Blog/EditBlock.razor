@@ -21,6 +21,7 @@
 
     private List<Topic> Topics { get; set; } = new List<Topic>();
     private BlogFormModel BlogForm { get; set; } = new BlogFormModel();
+    private string SelectedTopicName { get; set; } = string.Empty;
     private IBrowserFile? selectedImage;
     private string? selectedImageDataUrl;
     private string? userId;
@@ -41,9 +42,10 @@
         }
     }
 
-    private void SelectTopic(int topicId)
+    private void SelectTopic(int topicId, string topicName)
     {
         BlogForm.TopicId = topicId;
+        SelectedTopicName = topicName;
         StateHasChanged();
     }
 
@@ -157,18 +159,30 @@
                     @foreach (var topic in Topics)
                     {
                         <button class="topic-button @(BlogForm.TopicId == topic.Id ? "selected" : "")"
-                                    @onclick="() => SelectTopic(topic.Id)" >@topic.Name</button>
+                                    @onclick="() => SelectTopic(topic.Id, topic.Name)" >@topic.Name</button>
                     }
                 </div>
             </div>
         </div>
     </div>
-    <div class="editor-img">
-        @if (!string.IsNullOrEmpty(BlogForm.ImagePreviewUrl))
-        {
-            <img src="@BlogForm.ImagePreviewUrl" alt="Preview" class="image-preview" style="height: 100px; width: 150px;"/>
-        }
+    <div class="editor-selected-data">
+        <div style="width: 100px; height: 150px;">
+            @if (!string.IsNullOrEmpty(BlogForm.ImagePreviewUrl))
+            {
+                <img src="@BlogForm.ImagePreviewUrl" alt="Preview" class="image-preview" style="height: 100px; width: 150px;"/>
+            }
+        </div>
+        <div>
+            @if (!string.IsNullOrEmpty(SelectedTopicName))
+            {
+                <p>Selected topic: <span style="color: #9BD21C;">@SelectedTopicName</span></p>
+            }
+            else {
+                <p style="color: red;">You haven't chosen a blog topic</p>
+            }
+        </div>
     </div>
+    
     <div class="editor-header">
         <input type="text" @bind="BlogForm.Title" placeholder="Add a title..." class="editor-title" />
     </div>
@@ -213,6 +227,14 @@
         border-radius: 4px;
         background-color: #000;
         color: #fff;
+    }
+
+    .editor-selected-data {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 10px 0;
+        padding: 0 10px;
     }
 
     .editor-tools {

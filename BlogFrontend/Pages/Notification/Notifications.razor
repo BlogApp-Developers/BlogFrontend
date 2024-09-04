@@ -116,6 +116,7 @@
         {
             Console.Error.WriteLine($"Failed to load notifications: {ex.Message}");
         }
+        StateHasChanged();
     }
 
     private async Task SetAuthorizationHeader()

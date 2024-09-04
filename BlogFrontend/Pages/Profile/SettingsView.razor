@@ -12,11 +12,11 @@
         <h3>Account</h3><hr class="title-border">
         <ul>
             <li><a href="javascript:void(0);" @onclick="OpenEditProfile">Edit profile</a></li>
-            <li><a href="javascript:void(0);" @onclick="ShowChangeEmailModal">Change email</a></li>
+            @* <li><a href="javascript:void(0);" @onclick="ShowChangeEmailModal">Change email</a></li> *@
         </ul>
     </div>
 
-    @if (showChangeEmailModal)
+    @* @if (showChangeEmailModal)
     {
         <div class="modal">
             <div class="modal-content">
@@ -26,7 +26,7 @@
                 <button @onclick="ChangeEmail">Change</button>
             </div>
         </div>
-    }
+    } *@
 
     <div class="section">
         <h3>Notifications</h3><hr class="title-border">
@@ -57,7 +57,7 @@
     private bool AppNotificationsEnabled { get; set; } = true;
     private bool OtherNotificationsEnabled { get; set; } = true;
     private bool areNotificationsEnabled;
-    private bool showChangeEmailModal = false;
+    @* private bool showChangeEmailModal = false; *@
     private string newEmail = string.Empty;
     private bool showEditProfile = false;
 
@@ -108,7 +108,7 @@
                 HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
 
-            var response = await HttpClient.PutAsJsonAsync("http://localhost:5205/api/Notification/ChangeEmailSend", value);
+            var response = await HttpClient.PutAsJsonAsync("http://localhost:5259/api/Settings/ChangeEmailSend", value);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -126,7 +126,7 @@
 
         NavigationManager.NavigateTo("/");
     }
-    private void ShowChangeEmailModal()
+    @* private void ShowChangeEmailModal()
     {
         showChangeEmailModal = true;
     }
@@ -163,7 +163,7 @@
         {
             Console.Error.WriteLine($"Error: {ex.Message}");
         }
-    }
+    } *@
 }
 
 <style>

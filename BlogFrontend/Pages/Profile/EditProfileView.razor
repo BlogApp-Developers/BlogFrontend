@@ -56,35 +56,37 @@
     }
 
     private async Task SaveChanges()
+{
+    try
     {
-        try
+        var updatedUser = new UserDto
         {
-            var updatedUser = new UserDto
-            {
-                Id = user.Id,
-                UserName = user.UserName,
-                Email = user.Email,
-                AboutMe = user.AboutMe,
-                AvatarUrl = ImagePreviewUrl
-            };
+            Id = user.Id,
+            UserName = user.UserName,
+            Email = user.Email,
+            AboutMe = user.AboutMe,
+            AvatarUrl = ImagePreviewUrl
+        };
 
-            var response = await HttpClient.PutAsJsonAsync("http://localhost:5259/api/Settings/EditProfile", updatedUser);
+        var response = await HttpClient.PutAsJsonAsync("http://localhost:5259/api/Settings/EditProfile", updatedUser);
 
-            if (response.IsSuccessStatusCode)
-            {
-                Console.WriteLine("Profile updated successfully.");
-                Navigation.NavigateTo("/Profile");
-            }
-            else
-            {
-                Console.WriteLine("Failed to update profile: " + await response.Content.ReadAsStringAsync());
-            }
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("Profile updated successfully.");
+            Navigation.NavigateTo("/Profile");
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine($"An error occurred while saving changes: {ex.Message}");
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("Failed to update profile: " + errorContent);
         }
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred while saving changes: {ex.Message}");
+    }
+}
+
 
 }
 
