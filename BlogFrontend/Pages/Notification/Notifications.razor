@@ -7,6 +7,7 @@
 @using System.Net.Http.Headers
 @using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
+@using Microsoft.AspNetCore.SignalR.Client
 @inject HttpClient HttpClient
 @inject ILocalStorageService LocalStorage
 @inject JwtAuthenticationStateProvider AuthStateProvider
@@ -55,6 +56,7 @@
     private List<Notification> notifications = new();
     private string userName;
     private string AvatarUrl;
+    private HubConnection hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
@@ -80,6 +82,31 @@
             AvatarUrl = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
         }
         await GetUser(UserId);
+
+        await SetupSignalRConnection(token);
+    }
+
+    private async Task SetupSignalRConnection(string token)
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("http://localhost:5205/notificationsHub", options =>
+            {
+                options.AccessTokenProvider = () => Task.FromResult(token);
+            })
+            .Build();
+
+        hubConnection.On<string>("ReceiveNotification", (message) =>
+        {
+            notifications.Add(new Notification
+            {
+                Message = message,
+                UserName = userName,
+                CreatedAt = DateTime.Now
+            });
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
     }
 
     private async Task GetUser(Guid userId)
@@ -134,5 +161,13 @@
     private void HandleSearchCompleted(List<BlogDto> searchResults)
     {
         
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection != null)
+        {
+            await hubConnection.DisposeAsync();
+        }
     }
 }
