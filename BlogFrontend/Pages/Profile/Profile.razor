@@ -21,7 +21,7 @@
         </div>
     </div>
     <div class="profile-container">
-        <div class="blog-list" id="blog-list">
+        <div class="blog-list list-with-scroll" id="blog-list">
             @if (blogs != null)
             {
                 @foreach (var blog in blogs)
@@ -53,6 +53,10 @@
                     {
                         <img src="Assets/IMG/profile.png" alt="" width="40px">
                     }
+                    else if (isSavedListView)
+                    {
+                        <img src="Assets/IMG/settings-icon.png" alt="" width="40px">
+                    }
                     else
                     {
                         <img src="Assets/IMG/settings-icon.png" alt="" width="40px">
@@ -62,18 +66,19 @@
 
             @if (isSettingsView)
             {
-                <SettingsView OnEditProfileClicked="ShowEditProfileView" />
+                <SettingsView OnEditProfileClicked="ShowEditProfileView" OnShowSavedListClicked="ShowSavedListView"/>
+            }
+            else if (isSavedListView)
+            {
+                <SavedListView savedBlogs="@blogs" />
+            }
+            else if (isEditProfileView)
+            {
+                <EditProfileView AvatarUrl="@AvatarUrl" userName="@userName" User="@user" />
             }
             else
             {
-                @if (isEditProfileView)
-                {
-                    <EditProfileView AvatarUrl="@AvatarUrl" userName="@userName" User="@user" />
-                }
-                else
-                {
-                    <ProfileView AvatarUrl="@AvatarUrl" userName="@userName" User="@user" />
-                }
+                <ProfileView AvatarUrl="@AvatarUrl" userName="@userName" User="@user" />
             }
         </div>
     </div>
@@ -89,6 +94,7 @@
     private string AvatarUrl;
     private bool isSettingsView = false;
     private bool isEditProfileView = false;
+    private bool isSavedListView = false;
 
     private void ToggleViewMode()
     {
@@ -96,10 +102,17 @@
         {
             isSettingsView = false;
             isEditProfileView = false;
+            isSavedListView = false;
         }
         else if (isEditProfileView)
         {
             isEditProfileView = false;
+            isSettingsView = true;
+            isSavedListView = false;
+        }
+        else if (isSavedListView)
+        {
+            isSavedListView = false;
             isSettingsView = true;
         }
         else
@@ -108,12 +121,20 @@
         }
     }
 
-
     private void ShowEditProfileView()
     {
         isSettingsView = false;
         isEditProfileView = true;
+        isSavedListView = false;
     }
+
+    private void ShowSavedListView()
+    {
+        isSettingsView = false;
+        isEditProfileView = false;
+        isSavedListView = true;
+    }
+    
     protected override async Task OnInitializedAsync()
     {
         var userIdString = await LocalStorageService.GetItemAsync<string>("userId");

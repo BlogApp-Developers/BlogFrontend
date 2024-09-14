@@ -14,6 +14,7 @@
 @inject ILocalStorageService LocalStorageService
 @inject IJSRuntime JSRuntime
 
+
 <div class="blog-page">
     <Header OnSearchCompleted="HandleSearchCompleted" />
     <Menu OnTopicSelected="LoadBlogs"  OnTopicsUpdated="LoadTopicsInMenu" />
@@ -62,21 +63,36 @@
             </div>
             <div class="follow-block">
                 <h2>Who to follow</h2>
-                <div class="person">
-                    <h5>Aamatullah Rajkotwala</h5>
-                    <p>I like to write about movies, literature, pop culture and...</p>
-                    <button class="follow-button">Follow</button>
-                </div>
-                <div class="person">
-                    <h5>Marvel Gomulya</h5>
-                    <p>Indonesian Builder! Writings about philosophy, human...</p>
-                    <button class="follow-button">Follow</button>
-                </div>
-                <div class="person">
-                    <h5>Natasha MH</h5>
-                    <p>Writes on life, Travel, inspiration and Culture.</p>
-                    <button class="follow-button">Follow</button>
-                </div>
+                @if (usersToFollow.Any())
+                {
+                    @foreach (var user in usersToFollow)
+                    {
+                        var currentUser = user;
+                        var isFollowing = followingStates[currentUser.Id];
+                        <div class="person" style="display: flex;">
+                            <div class="author">
+                                <img src="@currentUser.AvatarUrl" alt="Avatar" style="width: 30px; height: 30px; border-radius: 100px; margin-right: 12px;">
+                            </div>
+                            <div class="discription" style="flex: 0.9;">
+                                <div class="username">
+                                    @currentUser.UserName
+                                </div>
+                                <div class="about-me">
+                                    @currentUser.AboutMe
+                                </div>
+                            </div>
+                            <button class="follow-button" 
+                                    style="background-color:@(isFollowing ? "red" : "transparent")" 
+                                    @onclick="() => ToggleFollow(currentUser.Id)">
+                                @(isFollowing ? "Unfollow" : "Follow")
+                            </button>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p>No users to follow</p>
+                }
             </div>
         </div>
     </div>
@@ -88,6 +104,9 @@
     private string selectedTopicName;
     private List<Topic> recommendedTopics = new List<Topic>();
     private string AvatarUrl;
+    private List<UserDto> usersToFollow = new();
+    private Dictionary<Guid, bool> followingStates = new Dictionary<Guid, bool>();
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -113,6 +132,43 @@
 
         await LoadRecommendedTopics();
         var topicList = await TopicService.GetTopicsAsync();
+
+        var response = await HttpClient.GetFromJsonAsync<List<UserDto>>($"api/Follow/WhoToFollow");
+        if (response != null)
+        {
+            usersToFollow = response;
+        }
+
+        foreach (var user in usersToFollow)
+        {
+            followingStates[user.Id] = false;
+        }
+    }
+
+    private async Task ToggleFollow(Guid userId)
+    {
+        if (followingStates.ContainsKey(userId))
+        {
+            followingStates[userId] = !followingStates[userId];
+
+            if (followingStates[userId])
+            {
+                await FollowUser(userId);
+            }
+            else
+            {
+                @* await UnfollowUser(userId); *@
+            }
+        }
+    }
+
+    private async Task FollowUser(Guid userId)
+    {
+        var result = await HttpClient.PostAsync($"api/Follow/Follow/{userId}", null);
+        if (result.IsSuccessStatusCode)
+        {
+            
+        }
     }
 
     private void HandleSearchCompleted(List<BlogDto> searchResults)

@@ -1,0 +1,78 @@
+@page "/Chat"
+@attribute [Authorize]
+@using BlogFrontend.Models
+@using BlogFrontend.Providers
+@using Blazored.LocalStorage
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+@inject HttpClient HttpClient
+@inject ILocalStorageService LocalStorage
+@inject JwtAuthenticationStateProvider AuthStateProvider
+@inject ILocalStorageService LocalStorageService
+
+<div class="blog-page" style="color: #fff;">
+    <Header OnSearchCompleted="HandleSearchCompleted" />
+
+    <div class="chat-container">
+       <p style="text-align: center;"><img src="Assets/IMG/constuction.jpg" alt="" style="width: 1285px;"></p>
+    </div>
+</div>
+
+@code {
+    private Guid UserId { get; set; }
+    private UserDto user;
+    private string userName;
+    private string AvatarUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userIdString = await LocalStorageService.GetItemAsync<string>("userId");
+
+        if (Guid.TryParse(userIdString, out var parsedUserId))
+        {
+            UserId = parsedUserId;
+        }
+        else
+        {
+            Console.Error.WriteLine("Invalid User ID format.");
+        }
+
+        var token = await LocalStorageService.GetItemAsync<string>("jwt");
+        if (!string.IsNullOrEmpty(token))
+        {
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            
+            userName = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            AvatarUrl = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
+        }
+        await GetUser(UserId);
+    }
+
+    private async Task GetUser(Guid userId)
+    {
+        try
+        {
+            var response = await HttpClient.GetAsync($"http://localhost:5259/api/Identity/GetUser/{userId}");
+            if (response.IsSuccessStatusCode)
+            {
+                user = await response.Content.ReadFromJsonAsync<UserDto>();
+                Console.WriteLine("User data retrieved successfully.");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.Error.WriteLine($"Failed to retrieve user: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    private void HandleSearchCompleted(List<BlogDto> searchResults)
+    {
+        
+    }
+}

@@ -1,0 +1,88 @@
+@page "/savedlist"
+@using BlogFrontend.Models
+@using System.Security.Claims
+@inject ILocalStorageService LocalStorageService
+
+<div class="saved-list-view">
+    <h3>Saved Blogs</h3>
+    <hr class="title-border">
+    <div class="saved-blogs-list">
+        @if (savedBlogs != null && savedBlogs.Any())
+        {
+            @foreach (var blog in savedBlogs)
+            {
+                <a href="blog/@blog.Id" class="blog-link" style="text-decoration: none;">
+                    <div class="blog-item saved-blog-item">
+                        <div class="content">
+                            <div class="author">
+                                <img src="@AvatarUrl" alt="Avatar" style="width: 30px; height: 30px; border-radius: 100px; margin-right: 12px;">
+                                @blog.UserName
+                            </div>
+                            <div class="title">@blog.Title</div>
+                            <div class="date">@blog.CreationDate.ToShortDateString()</div>
+                        </div>
+                        @* <img class="blog-img" src="http://localhost:5149/api/Blog/Image/@blog.Id" alt="@blog.Title"> *@
+                        <img class="blog-img" src="Assets/BlogsImg/6a751f98-7906-4cc9-bb48-19cc37947d81.jpg" alt="@blog.Title">
+                    </div>
+                </a>
+            }
+        }
+        else
+        {
+            <p>No saved blogs found.</p>
+        }
+    </div>
+    
+</div>
+
+@code {
+    [Parameter] public List<BlogDto> savedBlogs { get; set; }
+    private string AvatarUrl;
+
+     protected override async Task OnInitializedAsync()
+    {
+        var token = await LocalStorageService.GetItemAsync<string>("jwt");
+        if (!string.IsNullOrEmpty(token))
+        {
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            
+            AvatarUrl = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
+        }
+    }
+}
+
+<style>
+    .saved-list-view {
+        background-color: #000;
+        color: #fff;
+        padding: 30px;
+        border-radius: 30px;
+        margin: -10px;
+    }
+
+    .saved-blogs-list {
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        width: 400px;
+        overflow-y: auto;
+        max-height: 570px;
+    }
+
+    .saved-blogs-list .content {
+        flex: 0.9;
+    }
+
+    .saved-blogs-list .author {
+        display: flex;
+    }
+
+    .saved-blogs-list .title {
+        display: flex;
+    }
+
+    .saved-blogs-list .date {
+        display: flex;
+    }
+</style>

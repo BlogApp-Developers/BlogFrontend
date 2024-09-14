@@ -12,21 +12,9 @@
         <h3>Account</h3><hr class="title-border">
         <ul>
             <li><a href="javascript:void(0);" @onclick="OpenEditProfile">Edit profile</a></li>
-            @* <li><a href="javascript:void(0);" @onclick="ShowChangeEmailModal">Change email</a></li> *@
+            <li><a href="javascript:void(0);" @onclick="ShowSavedList">Saved List</a></li>
         </ul>
     </div>
-
-    @* @if (showChangeEmailModal)
-    {
-        <div class="modal">
-            <div class="modal-content">
-                <span class="close" @onclick="HideChangeEmailModal">&times;</span>
-                <h2>Change Email</h2>
-                <input type="email" @bind="newEmail" placeholder="Enter new email" />
-                <button @onclick="ChangeEmail">Change</button>
-            </div>
-        </div>
-    } *@
 
     <div class="section">
         <h3>Notifications</h3><hr class="title-border">
@@ -44,8 +32,6 @@
     <div class="section">
         <h3>More</h3><hr class="title-border">
         <ul>
-            @* <li><a href="#">Country</a></li>
-            <li><a href="#">Language</a></li> *@
             <li>
                 <a href="javascript:void(0);" @onclick="Logout">Logout</a>
             </li>
@@ -57,11 +43,15 @@
     private bool AppNotificationsEnabled { get; set; } = true;
     private bool OtherNotificationsEnabled { get; set; } = true;
     private bool areNotificationsEnabled;
-    @* private bool showChangeEmailModal = false; *@
     private string newEmail = string.Empty;
     private bool showEditProfile = false;
 
     [Parameter] public EventCallback OnEditProfileClicked { get; set; }
+    [Parameter] public EventCallback OnShowSavedListClicked { get; set; }
+    private void ShowSavedList()
+    {
+        OnShowSavedListClicked.InvokeAsync();
+    }
 
     private void OpenEditProfile()
     {
@@ -126,193 +116,4 @@
 
         NavigationManager.NavigateTo("/");
     }
-    @* private void ShowChangeEmailModal()
-    {
-        showChangeEmailModal = true;
-    }
-
-    private void HideChangeEmailModal()
-    {
-        showChangeEmailModal = false;
-    }
-
-    private async Task ChangeEmail()
-    {
-        try
-        {
-            var token = await LocalStorageService.GetItemAsync<string>("jwt");
-            if (!string.IsNullOrEmpty(token))
-            {
-                token = token.Trim('"');
-                HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
-
-            var response = await HttpClient.PutAsJsonAsync("http://localhost:5259/api/Settings/ChangeEmail", newEmail);
-            if (response.IsSuccessStatusCode)
-            {
-                Console.WriteLine("Email changed successfully.");
-                HideChangeEmailModal();
-            }
-            else
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                Console.Error.WriteLine($"Failed to change email: {error}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error: {ex.Message}");
-        }
-    } *@
 }
-
-<style>
-.settings-menu {
-    background-color: #000;
-    color: #fff;
-    padding: 30px;
-    border-radius: 30px;
-    margin: -10px;
-}
-
-.settings-menu h3 {
-    font-weight: bold;
-    margin-bottom: 10px;
-    font-size: 1rem;
-}
-
-.title-border {
-    border-radius: 10px;
-    width: 170px;
-    min-height: 3px;
-    opacity: 1;
-    margin: auto;
-    margin-bottom: 12px;
-}
-
-.settings-menu ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0 0 20px 0;
-}
-
-.settings-menu ul li {
-    padding: 10px 0;
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid #333;
-}
-
-.settings-menu ul li a {
-    color: #fff;
-    text-decoration: none;
-    font-size: 18px;
-    font-weight: 400;
-    letter-spacing: -0.02em;
-    margin: 5px;
-}
-
-.settings-menu ul li:last-child {
-    border-bottom: none;
-}
-
-.settings-menu ul li input[type="checkbox"] {
-    transform: scale(1.2);
-}
-
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 60px;
-  height: 34px;
-  margin: 0 0 0 15px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
-  border-radius: 34px;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 26px;
-  width: 26px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: #9BD21C;
-}
-
-input:checked + .slider:before {
-  transform: translateX(26px);
-}
-
-.modal {
-    display: block;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.4);
-}
-
-.modal-content {
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 30%;
-    border-radius: 10px;
-    position: relative;
-}
-
-.modal-content input {
-    background-color: #3f3f3f;
-    color: #fff;
-    border: none;
-    border-radius: 30px;
-    padding: 20px;
-    outline: none;
-    font-size: 16px;
-    height: 5px;
-    margin-bottom: 30px;
-}
-
-.close {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    font-size: 28px;
-    font-weight: bold;
-    color: #aaa;
-    cursor: pointer;
-}
-
-.close:hover,
-.close:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-</style>

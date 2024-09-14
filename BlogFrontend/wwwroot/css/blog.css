@@ -507,3 +507,11 @@
 .add-comment button:hover {
     background-color: #9BD21C;
 }
+
+.follow-button {
+    background-color: transparent;
+    border: 1px solid white;
+    border-radius: 10px;
+    width: 106px;
+    height: 36px;
+}

@@ -40,7 +40,7 @@
                     <img src="@LikeIcon" alt="Like" />
                     <span>@Blog.LikesCount</span>
                 </button>
-                <button @onclick="OpenComments" class="comment-button">
+                <button @onclick="ToggleCommentsVisibility" class="comment-button">
                     <img src="Assets/IMG/comment-icon.svg" alt="Comment" />
                 </button>
                 <button class="favorites-button">
@@ -48,6 +48,42 @@
                 </button>
             </div>
                 <hr style="color: #fff;">
+                @if (showComments)
+                {
+                    <div class="comments-section ">
+                        <h2>Comments</h2>
+
+                        @if (comments == null)
+                        {
+                            <p>Loading comments...</p>
+                        }
+                        else if (comments.Count == 0)
+                        {
+                            <p>No comments yet</p>
+                        }
+                        else
+                        {
+                            <div class="comment-list list-with-scroll" style="max-height: 300px;">
+                                <ul>
+                                    @foreach (var comment in comments)
+                                    {
+                                        <li>
+                                            <div class="comment">
+                                                <p class="comment-content">@comment.Content</p>
+                                                @* <p class="comment-details">by @comment.UserName, @comment.CreatedAt.ToString("g")</p> *@
+                                            </div>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                        <div class="add-comment">
+                            <textarea @bind="newCommentContent" placeholder="Write a comment..."></textarea>
+                            <button @onclick="SubmitComment">Add comment</button>
+                        </div>
+                    </div>
+                }
         </div>
         <div class="blog-right-side get-blog-right-side">
             <div class="blog-list right-side-list" id="blog-list">
@@ -83,7 +119,6 @@
 @code {
     [Parameter]
     public Guid BlogId { get; set; }
-    
     private BlogDto Blog { get; set; }
     private IEnumerable<Topic> Topics { get; set; }
     private Guid UserId { get; set; }
@@ -94,6 +129,9 @@
     private string selectedTopicName;
     private string userName;
     private string AvatarUrl;
+    private List<CommentDto> comments;
+    private string newCommentContent = "TEST";
+    private bool showComments = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -174,6 +212,7 @@
         else
         {
             Blog.LikesCount = await GetLikeCount();
+            await LoadComments();
             var isLiked = await CheckIfLiked();
             LikeIcon = isLiked ? "Assets/IMG/like-icon-red.svg" : "Assets/IMG/like-icon-gray.svg";
         }
@@ -283,8 +322,54 @@
         }
     }
     
-    private async Task OpenComments()
+     private async Task LoadComments()
     {
-        NavigationManager.NavigateTo($"/blog/comments/{BlogId}");
+        comments = await HttpClient.GetFromJsonAsync<List<CommentDto>>($"http://localhost:5149/api/Comments/GetCommentById/{BlogId}");
+        @foreach (var comment in comments) {
+            Console.WriteLine(@comment.Content);
+        }
+        StateHasChanged();
+    }
+
+    private async Task SubmitComment()
+    {
+        var comment = new Comment
+        {
+            BlogId = BlogId,
+            UserId = UserId,
+            Content = newCommentContent,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        Console.WriteLine(comment.BlogId);
+        Console.WriteLine(comment.UserId);
+        Console.WriteLine(comment.Content);
+        Console.WriteLine(comment.CreatedAt);
+
+        var response = await HttpClient.PostAsJsonAsync("http://localhost:5149/api/Comments/CreateComment", comment);
+
+        if (response.IsSuccessStatusCode)
+        {
+            newCommentContent = string.Empty;
+
+            var notification = new Notification
+            {
+                UserId = UserId,
+                Message = $"User {UserId} add comments",
+                Type = "Comment"
+            };
+
+            await CreateNotification(notification);
+            await LoadComments();
+        }
+        else
+        {
+            Console.Error.WriteLine("Error adding a comment");
+        }
+    }
+
+    private async Task ToggleCommentsVisibility()
+    {
+        showComments = !showComments;
     }
 }

@@ -1,12 +1,13 @@
 @using BlogFrontend.Models
+@inject HttpClient HttpClient
 
 <div class="user-profile-card">
     <img src="@AvatarUrl" class="user-profile-avatar" alt="Profile Avatar" />
     <h3>@userName</h3>
     <p>@(string.IsNullOrWhiteSpace(user.AboutMe) ? "Hello! I use the best Blog!" : user.AboutMe)</p>
     <div class="user-profile-stats">
-        <span>275 followers</span>
-        <span>345 following</span>
+        <span>@followersCount followers</span>
+        <span>@followingCount following</span>
     </div>
 </div>
 
@@ -14,4 +15,39 @@
     [Parameter] public string AvatarUrl { get; set; }
     [Parameter] public string userName { get; set; }
     [Parameter] public UserDto user { get; set; }
+    private int followersCount = 0;
+    private int followingCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFollowersAndFollowing();
+    }
+
+    private async Task LoadFollowersAndFollowing()
+    {
+        var userId = user.Id;
+
+        followersCount = await GetFollowersCount(userId);
+        followingCount = await GetFollowingCount(userId);
+    }
+
+    private async Task<int> GetFollowersCount(Guid userId)
+    {
+        var response = await HttpClient.GetAsync($"/api/Follow/GetFollowersCount/{userId}");
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<int>();
+        }
+        return 0;
+    }
+
+    private async Task<int> GetFollowingCount(Guid userId)
+    {
+        var response = await HttpClient.GetAsync($"/api/Follow/GetFollowingCount/{userId}");
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<int>();
+        }
+        return 0;
+    }
 }

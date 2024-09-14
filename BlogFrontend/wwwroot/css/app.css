@@ -120,3 +120,8 @@ code {
     background: #969696;
     background: linear-gradient(to bottom, #969696, #2c2e34)
 }
+
+.list-with-scroll {
+    overflow-y: auto;
+    max-height: 570px;
+}
