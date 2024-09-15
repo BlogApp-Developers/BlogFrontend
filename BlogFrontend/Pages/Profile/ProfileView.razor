@@ -21,6 +21,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadFollowersAndFollowing();
+        StateHasChanged();
     }
 
     private async Task LoadFollowersAndFollowing()

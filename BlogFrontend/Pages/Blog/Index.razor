@@ -67,24 +67,22 @@
                 {
                     @foreach (var user in usersToFollow)
                     {
-                        var currentUser = user;
-                        var isFollowing = followingStates[currentUser.Id];
                         <div class="person" style="display: flex;">
                             <div class="author">
-                                <img src="@currentUser.AvatarUrl" alt="Avatar" style="width: 30px; height: 30px; border-radius: 100px; margin-right: 12px;">
+                                <img src="@user.AvatarUrl" alt="Avatar" style="width: 30px; height: 30px; border-radius: 100px; margin-right: 12px;">
                             </div>
-                            <div class="discription" style="flex: 0.9;">
+                            <div class="description" style="flex: 0.9;">
                                 <div class="username">
-                                    @currentUser.UserName
+                                    @user.UserName
                                 </div>
                                 <div class="about-me">
-                                    @currentUser.AboutMe
+                                    @user.AboutMe
                                 </div>
                             </div>
-                            <button class="follow-button" 
-                                    style="background-color:@(isFollowing ? "red" : "transparent")" 
-                                    @onclick="() => ToggleFollow(currentUser.Id)">
-                                @(isFollowing ? "Unfollow" : "Follow")
+                            <button class="follow-button"
+                                    style="background-color:@(followingStates.ContainsKey(user.Id) && followingStates[user.Id] ? "red" : "transparent")"
+                                    @onclick="() => ToggleFollow(user.Id)">
+                                @(followingStates.ContainsKey(user.Id) && followingStates[user.Id] ? "Unfollow" : "Follow")
                             </button>
                         </div>
                     }
@@ -141,24 +139,48 @@
 
         foreach (var user in usersToFollow)
         {
-            followingStates[user.Id] = false;
+            followingStates[user.Id] = await CheckFollowingState(user.Id);
+        }
+
+        await LoadFollowingStates();
+    }
+
+    private async Task<bool> CheckFollowingState(Guid userId)
+    {
+        try
+        {
+            var response = await HttpClient.GetAsync($"api/follow/IsFollowing/{userId}");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<bool>();
+            }
+            else
+            {
+                return false;
+            }
+        }
+        catch
+        {
+            return false; 
         }
     }
 
     private async Task ToggleFollow(Guid userId)
     {
-        if (followingStates.ContainsKey(userId))
-        {
-            followingStates[userId] = !followingStates[userId];
+        var isFollowing = followingStates.ContainsKey(userId) && followingStates[userId];
+        var url = isFollowing ? $"api/Follow/Unfollow/{userId}" : $"api/Follow/Follow/{userId}";
 
-            if (followingStates[userId])
-            {
-                await FollowUser(userId);
-            }
-            else
-            {
-                @* await UnfollowUser(userId); *@
-            }
+        var response = await HttpClient.PostAsJsonAsync(url, new { UserId = userId });
+
+        if (response.IsSuccessStatusCode)
+        {
+            followingStates[userId] = !isFollowing;
+
+            await LocalStorageService.SetItemAsync($"following-{userId}", followingStates[userId]);
+        }
+        else
+        {
+            Console.WriteLine("Error updating follow status.");
         }
     }
 
@@ -168,6 +190,32 @@
         if (result.IsSuccessStatusCode)
         {
             
+        }
+    }
+
+    private async Task UnfollowUser(Guid userId)
+    {
+        var response = await HttpClient.PostAsync($"api/Follow/Unfollow/{userId}", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            
+        }
+    }
+    
+    private async Task LoadFollowingStates()
+    {
+        foreach (var user in usersToFollow)
+        {
+            var response = await HttpClient.GetAsync($"api/follow/IsFollowing/{user.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                followingStates[user.Id] = await response.Content.ReadFromJsonAsync<bool>();
+            }
+            else
+            {
+                followingStates[user.Id] = false;
+            }
         }
     }
 

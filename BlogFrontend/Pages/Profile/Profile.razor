@@ -159,6 +159,7 @@
             AvatarUrl = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
         }
         await GetUser(UserId);
+        StateHasChanged();
     }
 
     private async Task GetUser(Guid userId)
