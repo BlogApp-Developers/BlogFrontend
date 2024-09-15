@@ -15,7 +15,7 @@
             </div>
         </div>
         <div class="name-section">
-            <input type="text" id="userName" placeholder="Username" @bind="user.UserName" class="input-field" />
+            <input readonly type="text" id="userName" placeholder="Username" @bind="user.UserName" class="input-field" />
         </div>
     </div>
     
@@ -56,38 +56,42 @@
     }
 
     private async Task SaveChanges()
-{
-    try
     {
-        var updatedUser = new UserDto
+        try
         {
-            Id = user.Id,
-            UserName = user.UserName,
-            Email = user.Email,
-            AboutMe = user.AboutMe,
-            AvatarUrl = ImagePreviewUrl
-        };
+            var updatedUser = new UpdateDto
+            {
+                AboutMe = user.AboutMe
+            };
 
-        var response = await HttpClient.PutAsJsonAsync("http://localhost:5259/api/Settings/EditProfile", updatedUser);
+            using var content = new MultipartFormDataContent();
+            
+            content.Add(new StringContent(updatedUser.AboutMe), nameof(updatedUser.AboutMe));
+            
+            if (selectedImage != null)
+            {
+                var fileContent = new StreamContent(selectedImage.OpenReadStream());
+                content.Add(fileContent, "avatar", selectedImage.Name);
+            }
 
-        if (response.IsSuccessStatusCode)
-        {
-            Console.WriteLine("Profile updated successfully.");
-            Navigation.NavigateTo("/Profile");
+            var response = await HttpClient.PutAsync("http://localhost:5259/api/Settings/EditProfile", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Profile updated successfully.");
+                Navigation.NavigateTo("/Profile");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine("Failed to update profile: " + errorContent);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            var errorContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine("Failed to update profile: " + errorContent);
+            Console.WriteLine($"An error occurred while saving changes: {ex.Message}");
         }
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"An error occurred while saving changes: {ex.Message}");
-    }
-}
-
-
 }
 
 <style>
@@ -135,6 +139,7 @@ label {
 
 .input-field {
     width: 285px;
+    filter: contrast(0.5);
 }
 
 .textarea-field {
